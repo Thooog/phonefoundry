@@ -1,0 +1,14 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 11 用 allowBuilds 取代了 onlyBuiltDependencies（后者已失效，写了也不生效）。
+# 没列在这里的包一律视为「未审核」，strictDepBuilds 默认 true 时安装会直接失败
+# （ERR_PNPM_IGNORED_BUILDS），所以这份清单必须是完整的：
+#   esbuild  —— 跑 node install.js 定位原生二进制，缺了它 Vite 根本起不来
+#   vue-demi —— pinia 的依赖，postinstall 按 Vue 版本切换入口，删不掉
+# 加新依赖时若安装报这个错，按提示把它补进来：true / false 都必须明确表态，
+# 不要用 dangerouslyAllowAllBuilds 一刀切放行。
+allowBuilds:
+  esbuild: true
+  vue-demi: true

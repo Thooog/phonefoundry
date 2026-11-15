@@ -1,0 +1,20 @@
+{
+  "name": "@phone-sim/player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "作品端入口：读取 WorkData 渲染虚拟手机。构建为单一 IIFE，零第三方依赖。",
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5181 --strictPort"
+  },
+  "dependencies": {
+    "@phone-sim/player-ui": "workspace:*",
+    "@phone-sim/shared": "workspace:*",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "vite": "^6.0.3"
+  }
+}

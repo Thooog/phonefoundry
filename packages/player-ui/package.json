@@ -1,0 +1,18 @@
+{
+  "name": "@phone-sim/player-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "作品端渲染层：手机外壳、系统内核、应用原语、动效。只依赖 @phone-sim/shared 与 vue。",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@phone-sim/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  }
+}

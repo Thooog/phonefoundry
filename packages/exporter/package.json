@@ -1,0 +1,16 @@
+{
+  "name": "@phone-sim/exporter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "导出流水线：作品包 ZIP / 独立 HTML / 项目备份包。仅供创作端构建使用，不得进入作品端产物。",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@phone-sim/shared": "workspace:*",
+    "fflate": "^0.8.3"
+  }
+}

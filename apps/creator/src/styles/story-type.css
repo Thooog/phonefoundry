@@ -1,0 +1,8 @@
+@font-face {
+  font-family: 'Work Serif';
+  src: url('../assets/fonts/noto-serif-sc-600.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+:root { --font-story: 'Work Serif', 'Noto Serif SC', SimSun, serif; }

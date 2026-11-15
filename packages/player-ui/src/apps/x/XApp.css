@@ -1,0 +1,1201 @@
+.pui-x {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: #fff;
+  overflow: hidden;
+}
+
+.pui-x__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* 带图帖详情：整屏黑底媒体查看器 */
+.pui-x__screen--dark {
+  background: #000;
+}
+
+/* ── 深色媒体查看器 ── */
+.pui-xd__bar {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--pui-statusbar-h) + 4px) 12px 8px;
+}
+
+.pui-xd__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-xd__back:active {
+  background: #1b1f23;
+}
+
+.pui-xd__back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pui-xd__menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+}
+
+.pui-xd__menu svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 深色查看器整体：媒体舞台铺满整屏（图片相对整屏居中），
+   顶栏与信息区 position:relative + z-index 浮在舞台之上 */
+.pui-xd {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 媒体舞台：铺满整屏，图片在其中相对**整个屏幕**居中、左右贴屏幕边缘 */
+.pui-xd__stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 信息区：作者行 / 正文 / 互动胶囊 / 回复条，贴屏幕底部。
+   图片可能延伸到它后面（舞台铺满整屏），所以加一层向上的黑色渐变保证文字可读。 */
+.pui-xd__foot {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin-top: auto;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.72) 72%, rgba(0, 0, 0, 0) 100%);
+  transition: opacity 0.18s ease;
+}
+
+.pui-xd__foot--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 信息区收起时，圆点落到屏幕底部 */
+.pui-xd--bare {
+  --xm-dots-bottom: 10px;
+}
+
+.pui-xd__author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 0;
+}
+
+.pui-xd__id {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pui-xd__name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #e7e9ea;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pui-xd__handle {
+  font-size: 0.8125rem;
+  color: #71767b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pui-xd__follow {
+  flex: none;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #eff3f4;
+  color: #0f1419;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* 深色查看器里的关注中 / 互相关注：透明底 + 灰描边（真机 X 暗色态） */
+.pui-xd__follow--muted {
+  padding: 5px 17px;
+  border: 1px solid #536471;
+  background: transparent;
+  color: #e7e9ea;
+}
+
+.pui-xd__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  margin: 12px 0 0;
+  padding: 0 16px;
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: #e7e9ea;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pui-xd__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 16px 0;
+  padding-bottom: 8px;
+}
+.pui-xd__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #2f3336;
+  border-radius: 999px;
+  color: #71767b;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.pui-xd__pill svg { width: 18px; height: 18px; }
+
+.pui-xd__replybar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 12px calc(var(--pui-homebar-h) + 4px);
+  padding: 8px 12px;
+  border: 1px solid #2f3336;
+  border-radius: 24px;
+  background: #16181c;
+  color: #71767b;
+}
+
+.pui-xd__replybar-text {
+  flex: 1 1 auto;
+  font-size: 0.9375rem;
+}
+
+.pui-xd__replybar svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pui-x__feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── 首页顶栏 ── */
+.pui-x__topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--pui-statusbar-h) + 4px) 16px 8px;
+  background: #fff;
+}
+
+.pui-x__avatar-btn {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__avatar-btn:active {
+  opacity: 0.7;
+}
+
+/* logo 同时是"回桌面"的入口：热区放大到 34px（和右侧图标同高），
+   再用 -4px 的左右外边距把它压回 26px 占位，视觉位置与改造前完全一致 */
+.pui-x__logo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 -4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__logo-btn:active {
+  opacity: 0.5;
+}
+
+.pui-x__logo {
+  width: 26px;
+  height: 26px;
+  color: #0f1419;
+}
+
+.pui-x__topbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #0f1419;
+}
+
+.pui-x__topbar-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ── 首页 tab ── */
+.pui-x__hometabs {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #eff3f4;
+  background: #fff;
+}
+
+.pui-x__hometab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 11px 16px 13px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #536471;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__hometab--on {
+  color: #0f1419;
+}
+
+.pui-x__hometab--on::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: 54px;
+  height: 4px;
+  border-radius: 2px;
+  background: #0f1419;
+}
+
+.pui-x__hometab--add {
+  margin-left: auto;
+  font-weight: 600;
+  cursor: default;
+}
+
+.pui-x__chev {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── 悬浮发帖按钮 ── */
+.pui-x__fab {
+  position: absolute;
+  right: 18px;
+  bottom: calc(var(--pui-homebar-h) + 66px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #1d9bf0;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(29, 155, 240, 0.42);
+}
+
+.pui-x__fab--profile {
+  bottom: calc(var(--pui-homebar-h) + 14px);
+}
+
+.pui-x__fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* ── 底部 tab 栏 ── */
+.pui-x__tabbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 6px 10px calc(var(--pui-homebar-h) + 2px);
+  border-top: 1px solid #eff3f4;
+  background: #fff;
+}
+
+.pui-x__tabbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 44px;
+  color: #536471;
+}
+
+.pui-x__tabbar-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pui-x__tabbar-btn--on {
+  color: #0f1419;
+}
+
+/* ── 帖子详情 ── */
+.pui-x__subbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: calc(var(--pui-statusbar-h) + 4px) 12px 8px;
+  background: #fff;
+}
+
+.pui-x__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #0f1419;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__back:active {
+  background: #eff3f4;
+}
+
+.pui-x__back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pui-x__subbar-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f1419;
+}
+
+.pui-x__subbar-spacer {
+  flex: 1 1 auto;
+}
+
+.pui-x__detail {
+  padding: 12px 16px 4px;
+  border-bottom: 1px solid #eff3f4;
+}
+
+.pui-x__detail-media {
+  /* 详情页媒体统一圆角（单图/多图都吃）：真机 X 详情页图片是 16px 圆角。
+     overflow:hidden 同时给多图滑动带裁出圆角 */
+  border-radius: 16px;
+  overflow: hidden;
+  margin-right: -8px;
+  margin-left: -8px;
+}
+
+.pui-x__detail-media .pui-xm__track {
+  padding: 0;
+}
+
+.pui-x__detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pui-x__detail-id {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pui-x__name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f1419;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pui-x__handle {
+  font-size: 0.9375rem;
+  color: #536471;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pui-x__follow {
+  flex: none;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #0f1419;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* 关注中 / 互相关注：真机 X 是白底描边（未关注才是黑底） */
+.pui-x__follow--muted {
+  padding: 4px 13px;
+  border: 1px solid #cfd9de;
+  background: #fff;
+  color: #0f1419;
+}
+
+.pui-x__detail-text {
+  margin: 12px 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: #0f1419;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pui-x__detail-meta {
+
+  margin: 14px -8px 0;
+  font-size: 0.8125rem;
+  color: #536471;
+}
+
+/* 查看次数：真机 X 里计数加粗近黑，「查看次数」保持灰 */
+.pui-x__detail-views {
+  font-weight: 700;
+  color: #0f1419;
+}
+
+.pui-x__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin: 20px -8px 0;
+  padding-bottom: 8px;
+}
+
+.pui-x__actions--sm {
+  margin: 6px 0 0;
+  padding-bottom: 0;
+  justify-content: flex-start;
+  gap: 18px;
+}
+
+.pui-x__act {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #536471;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-x__act svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pui-x__actions--sm .pui-x__act svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── 相关 / 回复 ── */
+.pui-x__related {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  color: #536471;
+}
+
+.pui-x__related-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pui-x__related-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.875rem;
+  color: #536471;
+}
+
+.pui-x__chev-r {
+  width: 14px;
+  height: 14px;
+}
+
+.pui-x__replies {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-x__reply {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding: 16px 16px 10px;
+}
+
+.pui-x__reply--end {
+  border-bottom: 1px solid #eff3f4;
+}
+
+/*
+  对话连线：头像直径 40、左内边距 16，圆心在 x=36，所以 2px 的线放在 35px 处。
+  上段从行顶接到头像上沿（16px），下段从头像下沿（16+40=56px）接到行底。
+  两段拼起来正好是"头像 → 头像"的一条连续线，行与行之间的内边距也被接上。
+*/
+.pui-x__reply--up::before,
+.pui-x__reply--down::after {
+  content: '';
+  position: absolute;
+  left: 35px;
+  width: 2px;
+  background: #cfd9de;
+}
+
+.pui-x__reply--up::before {
+  top: 0;
+  height: 16px;
+}
+
+.pui-x__reply--down::after {
+  top: 56px;
+  bottom: 0;
+}
+
+.pui-x__reply-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pui-x__reply-head {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+
+.pui-x__meta {
+  flex: none;
+  font-size: 0.9375rem;
+  color: #536471;
+  white-space: nowrap;
+}
+
+.pui-x__reply-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.38;
+  color: #0f1419;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── 底部渐变 + 悬浮回复条 ──
+   渐变以屏幕底端为起点向上渐隐；回复条绝对定位悬浮在渐变之上。
+   ScrollArea（flex:1）在回复条离开文档流后自动铺满到屏底，
+   滚动内容从渐变后面穿过淡出，而不是在输入框上方被截断。 */
+.pui-x__detail-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 120px;
+  background: linear-gradient(to top, #fff 38%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.pui-x__detail-spacer {
+  height: 100px;
+}
+
+.pui-x__replybar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 12px calc(var(--pui-homebar-h) + 4px);
+  padding: 8px 12px;
+  border: 1px solid #eff3f4;
+  border-radius: 24px;
+  background: #f7f9f9;
+  color: #536471;
+}
+
+.pui-x__replybar-text {
+  flex: 1 1 auto;
+  font-size: 0.9375rem;
+}
+
+.pui-x__replybar svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pui-x__gif {
+  flex: none;
+  padding: 1px 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* ── 个人主页 ── */
+
+.pui-x__screen--profile {
+  --x-ptop-h: calc(var(--pui-statusbar-h) + 52px);
+}
+
+.pui-x__banner {
+  position: relative;
+  flex: none;
+  height: calc(var(--pui-statusbar-h) + 76px);
+  background: linear-gradient(180deg, #b9bdc2 0%, #d9dcdf 100%);
+  overflow: hidden;
+}
+
+.pui-x__banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+
+/* 顶部压一层暗角：状态栏与圆形按钮都是白的，浅色照片上没有它就读不出来 */
+.pui-x__banner-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.1) 46%, rgba(0, 0, 0, 0) 72%);
+  pointer-events: none;
+}
+
+/* ══ 固定顶栏 ══
+   两态共用一套行内布局，只有背景层和标题层切换：
+     未收起 —— 底全透明，只有三颗圆钮浮在横幅上（横幅从它下面滚过去）
+     收起后 —— 铺「个人背景的模糊副本」+ 一层压暗/提亮，名字与帖子数淡入
+   容器不吃点按（pointer-events: none），否则会挡住横幅上滚过的帖子。 */
+.pui-x__ptop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: var(--x-ptop-h);
+  pointer-events: none;
+}
+
+.pui-x__ptop-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 200ms var(--pui-ease-out);
+  background: linear-gradient(180deg, #b9bdc2 0%, #d9dcdf 100%);
+}
+
+.pui-x__ptop[data-collapsed='true'] .pui-x__ptop-bg {
+  opacity: 1;
+}
+
+/* 收起后它是一条不透明的栏：这时候必须吃掉点按，否则点在名字/空白处会
+   **穿到下面滚过去的帖子上**（帖子就在它背后 20px 处，一碰就进详情）。
+   未收起时保持透明穿透，横幅和帖子照常能按。 */
+.pui-x__ptop[data-collapsed='true'] {
+  pointer-events: auto;
+}
+
+/* 模糊副本：就是把横幅本身再画一遍再糊掉（真机的毛玻璃也是这个观感）。
+   四周放大 16px，免得 blur 的软边在边缘露白 */
+.pui-x__ptop-blur {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: calc(100% + 32px);
+  height: calc(100% + 32px);
+  object-fit: cover;
+  object-position: 50% 35%;
+  filter: blur(18px) saturate(1.1);
+}
+
+/* 有背景图 → 深色磨砂 + 白字；没背景图 → 浅色磨砂 + 深字。
+   两态都和「未收起时状态栏的字色」一致，滚动过程中字色不会跳。
+   底部一道发丝线：浅色磨砂和白底 tab 条挨在一起时，没有它就看不出边界。 */
+.pui-x__ptop-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 -0.5px 0 rgba(0, 0, 0, 0.14);
+}
+
+.pui-x__ptop[data-has-banner='true'] .pui-x__ptop-scrim {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.52) 0%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+.pui-x__ptop-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  /* 底部留白和 --x-ptop-h 一起调：border-box 下内容区仍是 34px，
+     圆钮 / 名字 / 帖子数位置完全不动，空出来的 14px 全给标题下方 */
+  padding: calc(var(--pui-statusbar-h) + 4px) 12px 14px;
+}
+
+/* ⚠️ 只有圆钮能点：容器是 pointer-events:none，这里要显式收回来 */
+.pui-x__ptop > .pui-x__ptop-row > .pui-x__round {
+  pointer-events: auto;
+}
+
+.pui-x__ptop-id {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity 180ms var(--pui-ease-out),
+    translate 180ms var(--pui-ease-out);
+}
+
+.pui-x__ptop[data-collapsed='true'] .pui-x__ptop-id {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.pui-x__ptop-name {
+  overflow: hidden;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #0f1419;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-x__ptop-sub {
+  font-size: 0.8125rem;
+  color: #536471;
+}
+
+.pui-x__ptop[data-has-banner='true'] .pui-x__ptop-name {
+  color: #fff;
+}
+
+.pui-x__ptop[data-has-banner='true'] .pui-x__ptop-sub {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pui-x__ptop-actions > .pui-x__round { pointer-events: auto; }
+.pui-x__ptop-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.pui-x__round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 20, 25, 0.5);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__round:active {
+  background: rgba(15, 20, 25, 0.68);
+}
+
+.pui-x__round svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pui-x__profile-avatar-row {
+  display: flex;
+  padding: 0 16px;
+  margin-top: -14px;
+  /* 缩放中心落在头像自己的圆心（16px 内边距 + 82/2），缩的时候原地收，
+     不会往左上角"缩回去"；transform 不占位，下面的名字块完全不跟着动。 */
+  transform-origin: 57px 50%;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.25, 1), opacity 200ms ease-out;
+  will-change: transform, opacity;
+}
+
+.pui-x__profile-avatar-row[data-avatar-gone='true'] {
+  transform: scale(0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pui-x__profile-avatar-row .pui-avatar {
+  box-shadow: 0 0 0 4px #fff;
+}
+
+.pui-x__profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 26px 16px 0;
+}
+
+.pui-x__profile-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #0f1419;
+}
+
+.pui-x__profile-handle {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #536471;
+}
+
+.pui-x__profile-bio {
+  margin: 6px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.38;
+  color: #0f1419;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pui-x__profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: #536471;
+}
+
+.pui-x__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pui-x__meta-item svg {
+  width: 15px;
+  height: 15px;
+}
+
+.pui-x__profile-counts {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: #536471;
+}
+
+.pui-x__profile-counts b {
+  font-weight: 700;
+  color: #0f1419;
+}
+
+/* 统计数字做成可点按钮跳列表页：去掉按钮默认观感，保留原排版 */
+.pui-x__countbtn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── 关注关系列表页 ── */
+.pui-x__followtabs {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  border-bottom: 1px solid #eff3f4;
+}
+
+.pui-x__followtab {
+  position: relative;
+  flex: 1 1 0;
+  padding: 13px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #536471;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__followtab--on {
+  color: #0f1419;
+}
+
+.pui-x__followtab--on::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: 54px;
+  height: 4px;
+  border-radius: 2px;
+  background: #0f1419;
+}
+
+.pui-x__followlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-x__followrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.pui-x__followrow-id {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pui-x__profile-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pui-x__profile-btn {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border: 1px solid #cfd9de;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f1419;
+}
+
+.pui-x__profile-btn--primary {
+  flex: 1.35 1 0;
+  border-color: #0f1419;
+  background: #0f1419;
+  color: #fff;
+}
+
+/* 资料块滚走之后，tab 条黏在固定顶栏下沿（真机同款）：
+   sticky 的 top 与顶栏高度共用一个变量，同进同退 */
+.pui-x__profile-tabs {
+  position: sticky;
+  top: var(--x-ptop-h);
+  z-index: 2;
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  margin-top: 14px;
+  border-bottom: 1px solid #eff3f4;
+  background: #fff;
+}
+
+.pui-x__ptab {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #536471;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-x__ptab svg {
+  width: 21px;
+  height: 21px;
+}
+
+.pui-x__ptab--on {
+  color: #0f1419;
+}
+
+.pui-x__ptab--on::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: 52%;
+  height: 4px;
+  border-radius: 2px;
+  background: #0f1419;
+}
+
+/* ── 屏幕切换（与 KakaoTalk 同款方向语义，前缀独立避免互相覆盖） ── */
+.pui-x-screen-push-enter-from {
+  transform: translateX(100%);
+}
+
+.pui-x-screen-push-leave-to {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-x-screen-pop-enter-from {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-x-screen-pop-leave-to {
+  transform: translateX(100%);
+}
+.pui-xd__pill.is-liked,.pui-x__act.is-liked{color:#f91880}
+.pui-xd__pill.is-liked svg path,.pui-x__act.is-liked svg path{fill:currentColor;stroke:currentColor}
+
+.pui-x-screen-push-enter-active,
+.pui-x-screen-push-leave-active,
+.pui-x-screen-pop-enter-active,
+.pui-x-screen-pop-leave-active {
+  transition:
+    transform 260ms var(--pui-ease-out),
+    opacity 260ms var(--pui-ease-out);
+  will-change: transform;
+}
+.pui-xd__pill.is-reposted,.pui-x__act.is-reposted{color:#00ba7c}
+.pui-x__follow-avatar-link,.pui-x__follow-name-link{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pui-x__follow-avatar-link{display:block;flex:none}
+.pui-x__follow-avatar-link:focus-visible,.pui-x__follow-name-link:focus-visible{outline:2px solid #1d9bf0;outline-offset:3px;border-radius:4px}
+.pui-x__reply-pair{border-bottom:1px solid #eff3f4}
+.pui-x__reply-pair>.pui-xp{border-bottom:0}
+.pui-x__reply-context{position:relative}
+.pui-x__reply-context::after{content:'';position:absolute;left:35px;top:56px;bottom:-12px;width:2px;background:#cfd9de;pointer-events:none}
+.pui-x__reply-context .pui-xp__mediaband{position:relative;z-index:1;background:var(--pui-bg,#fff)}
+.x-feedback{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.x-feedback:focus-visible{outline:2px solid #1d9bf0;outline-offset:2px;border-radius:5px}
+/* Feedback-only controls share the pressed styles of their visual peers. */
+.pui-x__round:is(:active,.x-feedback--pressed){background:rgba(15,20,25,.68)}
+.pui-xd__menu:is(:active,.x-feedback--pressed){background:#1b1f23;border-radius:50%}
+:is(.pui-x__topbar-icon,.pui-x__hometab,.pui-x__tabbar-btn,.pui-x__related-left,.pui-x__related-right,.xs__bottom>span):is(:active,.x-feedback--pressed){opacity:.5}
+.pui-x__profile-btn:is(:active,.x-feedback--pressed){background:#e7e9ea}
+.pui-x__profile-btn--primary:is(:active,.x-feedback--pressed){background:#272c30}
+.pui-x__fab:is(:active,.x-feedback--pressed){background:#1a8cd8}
+.pui-xd__follow:is(:active,.x-feedback--pressed){background:#d7dbdc}
+.pui-xd__follow--muted:is(:active,.x-feedback--pressed){background:#ffffff18}
+.pui-xd__pill:is(:active,.x-feedback--pressed){background:#1b1f23}
+.pui-x__act:is(:active,.x-feedback--pressed){opacity:.5}
+:is(.pui-x__replybar,.pui-xd__replybar)>.x-feedback:is(:active,.x-feedback--pressed){opacity:.5}
+
+input.pui-x__replybar-text,input.pui-xd__replybar-text{min-width:0;width:0;border:0;outline:none;background:transparent;color:inherit;font-family:inherit;line-height:1.5;padding:3px 0;user-select:text}
+input.pui-x__replybar-text::placeholder,input.pui-xd__replybar-text::placeholder{color:#71767b;opacity:1}
+
+.pui-x__follow:is(:active,.x-feedback--pressed){background:#272c30}
+.pui-x__follow--muted:is(:active,.x-feedback--pressed){background:#e7e9ea}

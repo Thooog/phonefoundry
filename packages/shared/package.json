@@ -1,0 +1,12 @@
+{
+  "name": "@phone-sim/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "纯 JavaScript 数据层：模型、校验、迁移、只读派生、时间语义。零 DOM、零 Vue 依赖。",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./*": "./src/*"
+  }
+}

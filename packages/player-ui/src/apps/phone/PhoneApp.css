@@ -1,0 +1,974 @@
+.pui-ph {
+  /* 列表横线的唯一出处。iOS 的 hairline 是 0.5px 的 rgba(60,60,67,0.29)，
+     集中成变量：每处各写一个浓度，最后就是粗细深浅参差。 */
+  --pui-ph-rule: rgba(60, 60, 67, 0.29);
+  --pui-ph-inset: 16px;
+  /* 头像 44 + 头像与文字的间距 12 = 线的缩进起点，和文字左沿严格同一条竖线。
+     用 calc 而不是写死 72px：改头像尺寸时线会自己跟上，不会再"从头像中间长出来"。 */
+  --pui-ph-avatar: 44px;
+  --pui-ph-rowgap: 12px;
+  --pui-ph-line-start: calc(var(--pui-ph-inset) + var(--pui-ph-avatar) + var(--pui-ph-rowgap));
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* ── 横线 ──────────────────────────────────────────
+ * 三条规则：
+ *   1. 组标题下面：一整条通栏（左内边距 → 右内边距）
+ *   2. 联系人行 / 最近通话行下面：从文字左沿（头像之后）到右内边距，不划到头像下面
+ *   3. 联系人行只有"后面还是同组联系人"才画；本组最后一个不画 ——
+ *      它后面紧跟的就是下一组的组标题通栏线，同一位置再画一条只会叠成深线。
+ * 「我的名片」下面不画线，直接接第一组。
+ */
+.pui-ph__row::after,
+.pui-ph__call::after,
+.pui-ph__group-head::after {
+  content: '';
+  position: absolute;
+  right: var(--pui-ph-inset);
+  bottom: 0;
+  height: 0.5px;
+  background: var(--pui-ph-rule);
+}
+
+/* 通栏：只有组标题 */
+.pui-ph__group-head::after {
+  left: var(--pui-ph-inset);
+}
+
+/* 缩进：联系人行、最近通话行（都从文字左沿 / 头像之后起笔，不划到头像下面） */
+.pui-ph__row::after,
+.pui-ph__call::after {
+  left: var(--pui-ph-line-start);
+}
+
+/* 名片下面不画线：它不属于任何分组，直接接第一组的组标题 */
+
+.pui-ph__row--last::after {
+  content: none;
+}
+
+/* 屏幕层：tab 栏常驻，所以过渡只发生在这一块里 */
+.pui-ph__stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pui-ph__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* ── 顶部导航 ── */
+.pui-ph__nav {
+  flex: none;
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  padding: calc(var(--pui-statusbar-h) + 6px) 12px 2px;
+  background: #fff;
+}
+
+.pui-ph__nav--round {
+  grid-template-columns: 40px 1fr 40px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.pui-ph__nav-side {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: #007aff;
+  font-family: inherit;
+  font-size: var(--pui-font-body);
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__nav-side--end {
+  text-align: right;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.pui-ph__nav-title {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #000;
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: var(--pui-weight-semibold);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    opacity var(--pui-dur-fast) linear,
+    transform var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+.pui-ph__nav-title:active {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.pui-ph__roundbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0.5px solid rgba(60, 60, 67, 0.12);
+  border-radius: 50%;
+  background: #f7f7f8;
+  color: #2c2c2e;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    background-color var(--pui-dur-fast) linear,
+    color var(--pui-dur-fast) linear;
+}
+
+.pui-ph__roundbtn svg {
+  width: 19px;
+  height: 19px;
+}
+
+button.pui-ph__roundbtn:active {
+  background: #ebebed;
+  transform: scale(0.9);
+}
+
+/* 拨号页左上「加联系人」。由 span 换成 button 后要复位浏览器默认样式：
+   padding / border 归零，尺寸、圆角、蓝底、蓝色都保持原样。 */
+.pui-ph__addbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__addbtn svg {
+  width: 23px;
+  height: 23px;
+}
+
+/* 列表区（最近通话 / 通讯录共用）：索引条靠它定位，所以必须是定位上下文 */
+.pui-ph__body,
+.pui-ph__list {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pui-ph__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pui-ph-rowgap);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 58px;
+  padding: 0 var(--pui-ph-inset);
+  border: 0;
+  background: #fff;
+  color: rgba(60, 60, 67, 0.6);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__card:active {
+  background: #f2f2f4;
+}
+
+.pui-ph__card-text {
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 1.0625rem;
+}
+
+/* 分组标题：白底小字，下面一条通栏线。
+   高度必须锁成整数（30px）：字号 13 × line-height 1.2 + padding 会算出 29.6px，
+   这个零头让组标题之后的每条 0.5px 线都落在半像素上，被抗锯齿摊薄成两行
+   半浓度的像素 —— 肉眼就是"有的线有、有的线没有"。 */
+.pui-ph__group-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 30px;
+  margin: 0;
+  padding: 0 var(--pui-ph-inset);
+  background: #fff;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.pui-ph__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-ph__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pui-ph-rowgap);
+  width: 100%;
+  min-height: 58px;
+  padding: 0 var(--pui-ph-inset);
+  border: 0;
+  background: #fff;
+  color: var(--pui-label);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pui-ph__row:active {
+  background: #f2f2f4;
+}
+
+.pui-ph__row-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.pui-ph__row-name {
+  overflow: hidden;
+  color: #000;
+  font-size: 1.0625rem;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ph__row-sub {
+  overflow: hidden;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 0.875rem;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ph__index {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.pui-ph__index span {
+  height: 16px;
+  color: #007aff;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* ── 最近通话 ── */
+.pui-ph__call {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pui-ph-rowgap);
+  min-height: 58px;
+  padding: 0 var(--pui-ph-inset);
+}
+
+.pui-ph__call-redial {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--pui-ph-rowgap);
+  min-width: 0;
+  margin-left: calc(-1 * var(--pui-ph-inset));
+  padding: 0 0 0 var(--pui-ph-inset);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__call-redial:not(:disabled):active {
+  background: #f2f2f4;
+}
+
+.pui-ph__call-redial:disabled {
+  cursor: default;
+}
+
+/* 陌生号码的人形占位：与 Avatar 同尺寸同底色，行高不会因为换了节点跳动 */
+.pui-ph__call-anon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pui-gray-4);
+  color: var(--pui-gray-2);
+}
+
+.pui-ph__call-anon svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+/* 名字/号码和时间同处一列；横线画在整行下边界（见文件顶部的共享规则） */
+.pui-ph__call-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.pui-ph__call-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pui-ph__call-name {
+  overflow: hidden;
+  color: #000;
+  font-size: 1.0625rem;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ph__call-name--missed {
+  color: #ff3b30;
+}
+
+.pui-ph__call-type {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 0.875rem;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ph__call-arrow {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* 来电/未接是"进来的"，箭头镜像成左下 */
+.pui-ph__call-arrow--in {
+  transform: scaleX(-1);
+}
+
+.pui-ph__call-time {
+  flex: none;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-ph__callbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 74px;
+  height: 74px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #34c759;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    opacity var(--pui-dur-fast) linear,
+    background-color var(--pui-dur-fast) linear,
+    filter var(--pui-dur-fast) linear;
+  will-change: transform;
+}
+
+.pui-ph__callbtn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.pui-ph__callbtn:not(:disabled):active {
+  opacity: 0.8;
+  transform: scale(0.94);
+}
+
+.pui-ph__callbtn svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* 最近通话行尾的信息钮：浅灰圆底 + 蓝色衬线小写 i（不是带圈的 ⓘ） */
+.pui-ph__callbtn--sm {
+  width: 36px;
+  height: 36px;
+  background: #f0f0f2;
+  color: #007aff;
+}
+
+.pui-ph__callbtn--sm svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* ── 拨号键盘 ── */
+.pui-ph__dial {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.pui-ph__dial-num {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 0 24px;
+  color: #000;
+  font-size: 2.375rem;
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 拆成两个 span 只为让「最后一位」单独入场；宽度、间距、居中方式不变 */
+.pui-ph__dial-num-head,
+.pui-ph__dial-num-last {
+  flex: none;
+  white-space: pre;
+}
+
+.pui-ph__dial-num-last {
+  animation: pui-ph-digit-in var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+@keyframes pui-ph-digit-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pui-ph__dial-hint {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 0 24px;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 1.0625rem;
+}
+
+.pui-ph__dial-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity var(--pui-dur-fast) linear,
+    transform var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+.pui-ph__dial-name:active {
+  opacity: 0.55;
+  transform: scale(0.94);
+}
+
+.pui-ph__dial-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+.pui-ph__keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 82px);
+  justify-content: center;
+  gap: 14px 26px;
+}
+
+.pui-ph__key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 82px;
+  height: 82px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e7e7e9;
+  color: #000;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    background-color var(--pui-dur-fast) linear;
+  will-change: transform;
+}
+
+.pui-ph__key:active {
+  background: #d7d7db;
+  transform: scale(0.9);
+}
+
+/* 物理键盘按下时给对应圆键一瞬高亮；同一键连按靠脚本重建 class 重播 */
+.pui-ph__key--flash {
+  animation: pui-ph-key-flash var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+@keyframes pui-ph-key-flash {
+  from { background-color: #d7d7db; transform: scale(0.9); }
+  to { background-color: #e7e7e9; transform: scale(1); }
+}
+
+.pui-ph__key-digit {
+  font-size: 2.125rem;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+
+.pui-ph__key-letters {
+  color: #3a3a3c;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pui-ph__dial-foot {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: 74px;
+  margin: 24px 0 0;
+}
+
+.pui-ph__delbtn {
+  position: absolute;
+  right: 78px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1c1c1e;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+.pui-ph__delbtn svg {
+  display: block;
+  width: 42px;
+  height: 30px;
+}
+
+.pui-ph__delbtn-body {
+  transition: fill var(--pui-dur-fast) linear;
+}
+
+.pui-ph__delbtn:active {
+  transform: scale(0.92);
+}
+
+/* 按压只换笔身填充，不动形状，也不动按钮底色 */
+.pui-ph__delbtn:active .pui-ph__delbtn-body {
+  fill: #d7d7db;
+}
+
+/* ── 通话中（iOS 18 风格）──
+ * 暗色渐变整屏（截图取样：顶部灰、往下沉到近黑），白字；状态栏由 isCall 的
+ * watch 切成 light。底部六颗圆钮两行三列，「结束」红底可点，其余外观。
+ * 类名用 incall：pui-ph__call 已被「最近通话行」占用（position:relative 会顶掉
+ * screen 的 absolute 定位，布局会塌）。 */
+.pui-ph__incall {
+  background: linear-gradient(180deg, #3e3e40 0%, #262628 55%, #141416 100%);
+  color: #fff;
+}
+
+.pui-ph__incall-top {
+  padding: calc(var(--pui-statusbar-h) + 56px) 20px 0;
+  text-align: center;
+}
+
+.pui-ph__incall-label {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+}
+
+.pui-ph__incall-title {
+  margin: 4px 0 0;
+  font-size: 2.125rem;
+  font-weight: 400;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.pui-ph__incall-sub {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-ph__incall-info {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 8px);
+  right: 16px;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__incall-info svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+/* 双类：单类会被 :hover 之类的 0,2,0 规则压掉，看起来就是「按了没反应」 */
+.pui-ph__incall-info.pui-ph__incall-info--ping {
+  color: #fff;
+}
+
+/* 六颗圆钮：两行三列，贴着 home 条上方 */
+.pui-ph__incall-grid {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--pui-homebar-h) + 20px);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px 8px;
+  justify-items: center;
+}
+
+.pui-ph__callkey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__callkey-orb {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pui-ph__callkey-orb svg {
+  width: 27px;
+  height: 27px;
+  display: block;
+}
+
+.pui-ph__callkey i {
+  font-size: 0.75rem;
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* 按压反馈：只把半透明圆钮提亮（真机按下去也是圆钮变模糊一团），不动尺寸。
+   双类选择器：单类只有 0,2,0，会被 `.pui-ph__callkey--end:active .pui-ph__callkey-orb`
+   那一档的 0,3,0 压掉；这里统一用 0,3,0 并排在它后面，两类钮都不会被吃掉。 */
+.pui-ph__callkey.pui-ph__callkey--ping .pui-ph__callkey-orb {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+/* 「结束」：红底 + 下垂话筒；它是通话屏里唯一真实的钮 */
+.pui-ph__callkey--end {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ph__callkey--end .pui-ph__callkey-orb {
+  background: #eb5545;
+}
+
+.pui-ph__callkey--end:active .pui-ph__callkey-orb {
+  background: #d8453a;
+}
+
+/* ── 底部 tab ── */
+.pui-ph__tabbar {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 6px 2px calc(var(--pui-homebar-h) + 1px);
+  border-top: 0.5px solid var(--pui-ph-rule);
+  background: #f9f9f9;
+}
+
+.pui-ph__tab {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+  color: #8e8e93;
+  font: inherit;
+  cursor: default;
+  transition:
+    opacity var(--pui-dur-fast) linear,
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    color var(--pui-dur-fast) linear;
+}
+
+.pui-ph__tab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.pui-ph__tab i {
+  font-size: 0.625rem;
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+
+.pui-ph__tab--on {
+  color: #007aff;
+}
+
+button.pui-ph__tab {
+  cursor: pointer;
+}
+
+button.pui-ph__tab:active {
+  opacity: 0.5;
+  transform: scale(0.94);
+}
+
+.pui-ph-screen-fade-enter-from,
+.pui-ph-screen-fade-leave-to {
+  opacity: 0;
+}
+
+.pui-ph-screen-fade-enter-active,
+.pui-ph-screen-fade-leave-active {
+  transition: opacity 260ms var(--pui-ease-out);
+  will-change: opacity;
+}
+
+.pui-ph-screen-push-enter-from {
+  transform: translateX(100%);
+}
+
+.pui-ph-screen-push-leave-to {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-ph-screen-pop-enter-from {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-ph-screen-pop-leave-to {
+  transform: translateX(100%);
+}
+
+.pui-ph-screen-push-enter-active,
+.pui-ph-screen-push-leave-active,
+.pui-ph-screen-pop-enter-active,
+.pui-ph-screen-pop-leave-active {
+  transition:
+    transform 260ms var(--pui-ease-out),
+    opacity 260ms var(--pui-ease-out);
+  will-change: transform;
+}
+
+@media (hover: hover) {
+  .pui-ph__nav-title:hover { opacity: 0.7; }
+  .pui-ph__dial-name:hover { opacity: 0.72; }
+  .pui-ph__addbtn:hover { background: rgba(0, 122, 255, 0.18); }
+  .pui-ph__key:not(:active):hover { background: #dedee2; }
+  .pui-ph__callbtn:not(:disabled):hover { filter: brightness(1.06); }
+  .pui-ph__delbtn:hover .pui-ph__delbtn-body { fill: #dedee2; }
+  button.pui-ph__tab:not(.pui-ph__tab--on):hover { color: #6d6d72; }
+}
+
+/* 圆键的焦点环跟随圆角；透明笔形删除键给一个小圆角框 */
+.pui-ph__key:focus-visible,
+.pui-ph__callbtn:focus-visible {
+  outline: 2px solid #007aff;
+  outline-offset: 3px;
+}
+
+.pui-ph__delbtn:focus-visible {
+  outline: 2px solid #007aff;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.pui-ph__nav-title:focus-visible,
+.pui-ph__dial-name:focus-visible,
+.pui-ph__addbtn:focus-visible,
+button.pui-ph__tab:focus-visible {
+  outline: 2px solid #007aff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pui-ph__nav-side,
+.pui-ph__addbtn {
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    background-color var(--pui-dur-fast) linear,
+    color var(--pui-dur-fast) linear,
+    opacity var(--pui-dur-fast) linear;
+}
+
+button.pui-ph__nav-side:active {
+  transform: scale(0.9);
+  opacity: 0.55;
+}
+
+.pui-ph__addbtn:active {
+  transform: scale(0.92);
+}
+
+/* 删除键 / 匹配姓名：出现与消失都淡一下，不硬切。
+   前者绝对定位、后者在 min-height:26 的容器里，都不产生布局跳动。 */
+.pui-ph-fade-enter-active,
+.pui-ph-fade-leave-active {
+  transition: opacity var(--pui-dur-fast) linear;
+}
+
+.pui-ph-fade-enter-from,
+.pui-ph-fade-leave-to {
+  opacity: 0;
+}
+
+.pui-ph__tab--ping {
+  color: #007aff;
+}
+
+.pui-ph__addbtn.pui-ph__addbtn--ping,
+.pui-ph__roundbtn.pui-ph__roundbtn--ping {
+  background: #007aff;
+  color: #fff;
+}
+
+/* 最近通话的「编辑 / ＋」是裸文字按钮，真机点按只会让文字一瞬变淡，
+   不会突然铺一块蓝色底。这里不设背景 / 圆角，只接 :active 的缩放继续淡一下。 */
+.pui-ph__nav-side.pui-ph__nav-side--ping {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pui-ph__dial-num-last,
+  .pui-ph__key--flash {
+    animation: none;
+  }
+
+  .pui-ph__nav-title:active,
+  .pui-ph__dial-name:active,
+  .pui-ph__addbtn:active,
+  button.pui-ph__nav-side:active,
+  button.pui-ph__roundbtn:active,
+  .pui-ph__key:active,
+  .pui-ph__callbtn:not(:disabled):active,
+  .pui-ph__delbtn:active,
+  button.pui-ph__tab:active {
+    transform: none;
+  }
+}

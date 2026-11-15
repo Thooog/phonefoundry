@@ -1,0 +1,23 @@
+{
+  "name": "@phone-sim/creator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "创作端：项目管理、角色与内容编辑、预览、导出。",
+  "scripts": {
+    "dev": "vite --port 5173 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5180 --strictPort"
+  },
+  "dependencies": {
+    "@phone-sim/exporter": "workspace:*",
+    "@phone-sim/player-ui": "workspace:*",
+    "@phone-sim/shared": "workspace:*",
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.3"
+  }
+}

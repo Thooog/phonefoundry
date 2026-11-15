@@ -1,0 +1,122 @@
+
+
+:root {
+
+  --pui-device-w: 410px;
+  --pui-device-h: 864px;
+  /* 边框 12px：金属带里还要容纳一圈内缘黑倒角（inset shadow），10px 会显得太细 */
+  --pui-bezel-width: 12px;
+  --pui-radius-device: 56px;
+  --pui-radius-screen: 46px;
+  --pui-statusbar-h: 54px;
+  --pui-homebar-h: 34px;
+
+  /* 系统色板（浅色） */
+  --pui-blue: #007aff;
+  --pui-green: #34c759;
+  --pui-red: #ff3b30;
+  --pui-orange: #ff9500;
+  --pui-yellow: #ffcc00;
+  --pui-pink: #ff2d55;
+  --pui-purple: #af52de;
+  --pui-gray: #8e8e93;
+  --pui-gray-2: #aeaeb2;
+  --pui-gray-3: #c7c7cc;
+  --pui-gray-4: #d1d1d6;
+  --pui-gray-5: #e5e5ea;
+  --pui-gray-6: #f2f2f7;
+
+  --pui-label: #000000;
+  --pui-label-2: rgba(60, 60, 67, 0.6);
+  --pui-label-3: rgba(60, 60, 67, 0.3);
+  --pui-separator: rgba(60, 60, 67, 0.29);
+  --pui-bg: #ffffff;
+  --pui-bg-grouped: #f2f2f7;
+  --pui-fill: rgba(120, 120, 128, 0.12);
+  --pui-fill-2: rgba(120, 120, 128, 0.16);
+
+  /* 字体：全部走 rem，跟随用户设置 */
+  --pui-font-large-title: 2.125rem; /* 34/16 */
+  --pui-font-title1: 1.75rem; /* 28 */
+  --pui-font-title2: 1.375rem; /* 22 */
+  --pui-font-title3: 1.25rem; /* 20 */
+  --pui-font-headline: 1.0625rem; /* 17 */
+  --pui-font-body: 1.0625rem; /* 17 */
+  --pui-font-callout: 1rem; /* 16 */
+  --pui-font-subhead: 0.9375rem; /* 15 */
+  --pui-font-footnote: 0.8125rem; /* 13 */
+  --pui-font-caption1: 0.75rem; /* 12 */
+  --pui-font-caption2: 0.6875rem; /* 11 */
+
+  --pui-weight-regular: 400;
+  --pui-weight-medium: 500;
+  --pui-weight-semibold: 600;
+  --pui-weight-bold: 700;
+
+  /* 字距：大字号收紧，小字号略放 */
+  --pui-tracking-large: -0.022em;
+  --pui-tracking-title: -0.016em;
+  --pui-tracking-body: -0.006em;
+  --pui-tracking-caption: 0.006em;
+
+  /* 行高：大标题紧，正文松 */
+  --pui-leading-large: 1.12;
+  --pui-leading-title: 1.22;
+  --pui-leading-body: 1.42;
+  --pui-leading-caption: 1.3;
+
+  /* 间距（8pt 栅格） */
+  --pui-space-1: 4px;
+  --pui-space-2: 8px;
+  --pui-space-3: 12px;
+  --pui-space-4: 16px;
+  --pui-space-5: 20px;
+  --pui-space-6: 24px;
+  --pui-space-8: 32px;
+
+  /* 材质（浅色半透明 + 体系化模糊强度） */
+  --pui-material-thin: rgba(255, 255, 255, 0.55);
+  --pui-material-regular: rgba(250, 250, 252, 0.74);
+  --pui-material-thick: rgba(255, 255, 255, 0.9);
+  --pui-blur-regular: 24px;
+  --pui-blur-thick: 34px;
+
+  /* 层级 */
+  --pui-z-statusbar: 30;
+  --pui-z-navbar: 40;
+  --pui-z-overlay: 60;
+
+  /* 动效时长（仅非手势场景使用） */
+  --pui-dur-fast: 140ms;
+  --pui-dur-base: 220ms;
+  --pui-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --pui-ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+}
+
+/* 降低动效：去掉位移与弹性，保留淡入与颜色变化 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --pui-dur-fast: 1ms;
+    --pui-dur-base: 1ms;
+  }
+}
+
+/* 降低透明度：材质转为实色 */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --pui-material-thin: #fafafc;
+    --pui-material-regular: #fafafc;
+    --pui-material-thick: #ffffff;
+    --pui-blur-regular: 0px;
+    --pui-blur-thick: 0px;
+  }
+}
+
+/* 提高对比度 */
+@media (prefers-contrast: more) {
+  :root {
+    --pui-label-2: rgba(0, 0, 0, 0.78);
+    --pui-label-3: rgba(0, 0, 0, 0.5);
+    --pui-separator: rgba(0, 0, 0, 0.5);
+  }
+}

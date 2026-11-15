@@ -1,0 +1,100 @@
+@import './tokens.css';
+@import './story-type.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+/*
+ * 根级禁滚。创作端是全屏工作台（顶栏 + 侧栏 + 内容列），唯一合法的滚动源是
+ * `.ws__main`。不加这条时，长内容页（信息 / KakaoTalk / Instagram / X 编辑器）
+ * 会把根元素的可滚高度一并撑大 —— 外层 html 和内层 main 同时出现滚动条
+ * （「滚轮套壳」），main 滚到底后滚轮还会接力滚外层，顶栏 / 侧栏被滚出视口，
+ * 看起来就是整页内容错位。
+ */
+html,
+body {
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Keep the app in the visible viewport without fixing the document body.
+ * A fixed body can retain iOS keyboard panning after the keyboard closes. */
+#app {
+  position: fixed;
+  top: var(--creator-viewport-top, 0px);
+  left: 0;
+  width: 100%;
+  height: var(--creator-viewport-height, 100dvh);
+  overflow: hidden;
+}
+/* Small editable text triggers input auto-zoom on iOS, changing viewport scale. */
+@media (any-pointer: coarse) {
+  :is(input, textarea, select) { font-size: 16px !important; }
+}
+/*
+ * 滚动链的"终点"标记。注意这里**不能带 textarea**：
+ * textarea 的 UA overflow 是 auto，等于天然就是滚动容器；而创作端的长文本框
+ * （备忘录正文、帖子/评论正文、人物介绍）都是 auto-grow 的，自身没有滚动余量。
+ * 一旦给它 contain，滚动链就在输入框这一层被掐断 —— 手指或滚轮落在正文上时
+ * 整页既滑不动也滚不动，而这恰恰是用户最常落手的位置。
+ */
+:is(.ws__main,.ws__nav-groups,.record-workspace__records,.record-workspace__detail,.plist,.photo-albums__list,.album-management,.inspector-panel,.character-info,.ied__panel) { overscroll-behavior: contain; }
+@media (any-pointer: coarse) { textarea { resize: none !important; } }
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 1px solid var(--c-accent);
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px var(--c-accent-weak);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--c-accent-weak);
+}
+
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+input, select, textarea { max-width:100%; }
+button:disabled { cursor:not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+}

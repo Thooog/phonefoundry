@@ -1,0 +1,1318 @@
+.pui-kt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--pui-bg);
+  overflow: hidden;
+}
+
+.pui-kt__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--pui-bg-grouped);
+}
+
+/* 顶栏图标：设计图墨迹 21~23px（432 宽版式），折算 390 宽约 19~21px。
+   26px 时搜索墨迹 23.6px 偏大，23px 正好落在区间内 */
+.pui-kt__glyph {
+  width: 23px;
+  height: 23px;
+  color: var(--pui-label);
+}
+
+/* 双气泡（Vector 2 原图 53:40 偏扁）在 23px 见方里高度只剩 17px，比齿轮矮一截；
+   落点加宽到 26px，左右用 -1.5px 负 margin 抵消，总占位仍是 23px，相邻图标位置不动 */
+.pui-kt__glyph.pui-kt__glyph--wide {
+  width: 26px;
+  height: 23px;
+  margin: 0 -1.5px;
+}
+
+/* ══ 列表屏：Friends 版式 ══ */
+.pui-kt__screen--list {
+  background: #fff;
+}
+
+.pui-kt__masthead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--pui-statusbar-h) + 10px) var(--pui-space-4) 10px;
+  background: #fff;
+}
+
+/* 大标题同时是"回桌面"的入口：reset 已经把 button 的边框/底色/内边距清零，
+   这里只补文字对齐和按压反馈，保证和改造前的 h1 像素一致 */
+.pui-kt__mast-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--pui-label);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__mast-title:active {
+  opacity: 0.5;
+}
+
+.pui-kt__masthead-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 顶栏真按钮（搜索）：reset 已清 button 底色/边框/内边距，这里只补布局与按压反馈 */
+.pui-kt__mast-icon {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__mast-icon:active {
+  opacity: 0.5;
+}
+
+/* 「点得动、但哪也不去」的按压反馈（通话/更多/加好友/设置/新建聊天/会话顶栏三颗…）。
+   必须用双类选择器：单类 (0,1,0) 会被上面的 :active (0,1,1) 和未来可能加的 hover 压掉，
+   表现就是"按下去有反应、松手立刻恢复原样"，等于没做。 */
+.pui-kt__mast-icon.pui-kt__mast-icon--ping {
+  opacity: 0.32;
+}
+
+/* 装饰图标组：现在每个都是真按钮，共享同一 16px 间距 */
+.pui-kt__masthead-deco {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pui-kt__me {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: var(--pui-space-3) var(--pui-space-4);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__me.pui-kt__me--ping {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.pui-kt__me-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Profile +：button 里不能嵌 button，所以它是 span + .stop；
+   要「可点」就得自己给 cursor 和高亮，别指望父级按钮的按压态 */
+.pui-kt__me-pill {
+  flex: none;
+  padding: 5px 13px;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 17px;
+  font-size: var(--pui-font-footnote);
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__me-pill.pui-kt__me-pill--ping {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.pui-kt__section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--pui-space-4) var(--pui-space-4) 6px;
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: transparent;
+  font: inherit;
+  font-size: var(--pui-font-footnote);
+  color: var(--pui-label-2);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__section-arrow {
+  width: 15px;
+  height: 15px;
+  color: var(--pui-label-3);
+  transition: transform 150ms var(--pui-ease-out);
+}
+
+.pui-kt__section-arrow--closed {
+  transform: rotate(180deg);
+}
+
+/* 装饰行 / 邀请行：无入口，仅外观 */
+.pui-kt__room--static {
+  cursor: default;
+}
+
+.pui-kt__room--invite {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pui-kt__plus-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fee500;
+  color: #191919;
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+/* 邀请好友行图标：尺寸沿用 46，只把圆角对齐聊天页会话头像的 38%（原 14px≈30%，显得更方） */
+.pui-kt__invite-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 38%;
+  background: #5c6470;
+  color: #fff;
+}
+
+.pui-kt__invite-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 会话行：圆角方头像 + 名字 + 时间 + chevron */
+.pui-kt__rooms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 会话行头像：设计图是更接近正方的连续圆角方（38%），比全局 squircle 的 30% 更方一点 */
+.pui-kt__room-avatar {
+  border-radius: 38%;
+}
+
+.pui-kt__room {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 9px var(--pui-space-4);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__room:active {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.pui-kt__room-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--pui-font-body);
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chats 行的两行主区：名字（+me 标记） / 最后一条消息预览 */
+.pui-kt__room-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pui-kt__room-main .pui-kt__room-name {
+  flex: 0 0 auto;
+}
+
+.pui-kt__room-preview {
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-kt__me-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #191919;
+  color: #fff;
+  font-size: 0.5625rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: 1px;
+}
+
+.pui-kt__room-time {
+  flex: none;
+  align-self: flex-start;
+  padding-top: 3px;
+  font-size: var(--pui-font-footnote);
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-kt__room-chevron {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: rgba(0, 0, 0, 0.28);
+}
+
+/* 筛选 chips（装饰） */
+.pui-kt__chips {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 4px var(--pui-space-4) 10px;
+  background: #fff;
+}
+
+.pui-kt__chip {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.06);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__chip--on {
+  background: #111;
+  color: #fff;
+}
+
+.pui-kt__chip--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* 未读 / 排序：不做真过滤，只给一次按下的深色底（双类压过 .pui-kt__chip 的底色） */
+.pui-kt__chip.pui-kt__chip--ping {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.pui-kt__chip--icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pui-kt__screen--search {
+  background: #f2f3f5;
+}
+
+.pui-kt__search-head {
+  flex: none;
+  padding: calc(var(--pui-statusbar-h) + 8px) 13px 0;
+}
+
+.pui-kt__search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px 0 4px;
+  border-radius: 10px;
+  background: #e9eaec;
+}
+
+.pui-kt__search-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pui-kt__search-back:active {
+  opacity: 0.5;
+}
+
+.pui-kt__search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--pui-label);
+  outline: none;
+}
+
+.pui-kt__search-input::placeholder {
+  color: #adb1b7;
+}
+
+.pui-kt__search-input:focus-visible {
+  outline: none;
+}
+
+/* 清除钮：深灰圆底白 ×，真机同款 */
+.pui-kt__search-clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #85898f;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-clear svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* 扫码框（空关键词时的装饰） */
+.pui-kt__search-scan {
+  flex: none;
+  display: inline-flex;
+  width: 21px;
+  height: 21px;
+  color: #5d6167;
+}
+
+.pui-kt__search-scan svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 白卡片：近期搜索 / 筛选 / 结果共用一个外壳 */
+.pui-kt__search-card {
+  margin: 16px 13px 0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pui-kt__search-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 16px 0;
+}
+
+.pui-kt__search-card-title {
+  font-size: 1.0625rem;
+  font-weight: var(--pui-weight-bold);
+  color: var(--pui-label);
+}
+
+.pui-kt__search-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pui-kt__search-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #9aa0a6;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-action:active {
+  opacity: 0.6;
+}
+
+.pui-kt__search-vline {
+  width: 1px;
+  height: 12px;
+  background: #e2e4e7;
+}
+
+.pui-kt__search-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.pui-kt__search-term {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px 7px 13px;
+  border-radius: 18px;
+  background: #f3f4f6;
+}
+
+.pui-kt__search-term-label {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-term-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a8adb3;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-term-x svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* 筛选 chips：描边胶囊 + 下箭头（装饰） */
+.pui-kt__search-filters {
+  display: flex;
+  gap: 8px;
+  padding: 13px 14px;
+}
+
+.pui-kt__search-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border: 1px solid #dcdee2;
+  border-radius: 18px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--pui-label);
+}
+
+/* 日期 / 好友 / 聊天室：没有下拉面板，按下时底色与描边一起加深 */
+.pui-kt__search-filter.pui-kt__search-filter--ping {
+  background: #e8eaee;
+  border-color: #c3c7cd;
+}
+
+.pui-kt__search-filter svg {
+  width: 12px;
+  height: 12px;
+  color: #9aa0a6;
+}
+
+/* 结果行：头像 46（与列表行同尺寸同圆角）+ 名字/预览 + 右上日期 */
+.pui-kt__search-results {
+  padding: 2px 0;
+}
+
+.pui-kt__search-hit {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__search-hit:active {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+/* 好友结果没有预览/时间，只有一行名字：垂直居中头像，避免名字贴着头像顶边 */
+.pui-kt__search-hit[data-mode='friend'] {
+  align-items: center;
+}
+
+/* 右侧文字块（名字/预览 + 日期/条数）：这一层只包文字，不含头像，
+   所以它的高度就是「名字 + 预览」的行高盒，条数贴它的底 = 贴预览文字的底 */
+.pui-kt__search-hit-body {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pui-kt__search-hit-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* 对话结果的文字块整体下移 2px：条数 11px + line-height:1 时字形底部会沉出盒子约 2px，
+   而昵称行盒底部还留着半 leading，两者「盒子贴底」不等于「墨迹贴底」。
+   给顶部垫 2px、再用等量负 margin 抵消撑高的部分，
+   文字块视觉下移而右侧一列（日期/条数）基准不动，昵称墨迹底因此与条数齐平。
+   好友结果只有一行名字、没有条数，不参与下移 */
+.pui-kt__search-hit[data-mode='chat'] .pui-kt__search-hit-main {
+  padding-top: 2px;
+  margin-bottom: -2px;
+}
+
+/* 第一行：命中的消息正文（主信息，黑色，命中段标蓝） */
+.pui-kt__search-hit-preview {
+  font-size: 0.9375rem;
+  font-weight: var(--pui-weight-regular);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 第二行：房间名 / 对方昵称（次信息，灰、小一号）；好友结果只有这一行，
+   没有消息可当主信息，所以整行仍按主信息写（黑、加粗、同字号） */
+.pui-kt__search-hit-name {
+  font-size: 0.8125rem;
+  font-weight: var(--pui-weight-regular);
+  color: var(--pui-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-kt__search-hit[data-mode='friend'] .pui-kt__search-hit-name {
+  font-size: 0.9375rem;
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+}
+
+/* 命中段标蓝：真机搜索结果的关键词高亮色 */
+.pui-kt__search-hit-hl {
+  color: #4a7dd0;
+}
+
+/* 右侧一列：日期在上、命中条数在下（同一会话里可能有多条消息命中关键词）。
+   这一列拉伸到与左侧两行文字等高，日期贴顶、条数贴底，
+   条数的下边缘因此和最后一行的昵称下边缘对齐 */
+.pui-kt__search-hit-side {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.pui-kt__search-hit-time {
+  padding-top: 2px;
+  font-size: 0.75rem;
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-kt__search-hit-count {
+  font-size: 0.6875rem;
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pui-kt__search-empty {
+  padding: 30px 16px;
+  font-size: 0.875rem;
+  color: #9aa0a6;
+  text-align: center;
+}
+
+/* 底部 tab bar：好友/聊天为真实切换按钮，通话/更多为装饰。
+   设计图里这条 tab 栏没有上边框，分隔交给内容区的留白 */
+.pui-kt__tabs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 8px calc(var(--pui-homebar-h) + 6px);
+  background: #fff;
+}
+
+/* 底部 tab 图标：设计图四颗墨迹 20.5~22.5px（432 宽），折算 390 宽约 19~20px。
+   22px 时人像墨迹只有 17.2px 偏小，24px 正好落回区间；气泡/省略号在模板里各自再放大 */
+.pui-kt__tab {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__tab svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pui-kt__tab--on {
+  color: #111;
+}
+
+/* 通话 / 更多：没有对应页面，按下时短暂变深（与切 tab 的选中态同色，观感一致） */
+.pui-kt__tab.pui-kt__tab--ping {
+  color: #111;
+}
+
+/* ══ 详情屏：聊天版式 ══ */
+
+.pui-kt__screen--chat {
+  background: #b6c8d6;
+}
+
+.pui-kt__chatbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(var(--pui-statusbar-h) + 6px) var(--pui-space-4) 10px;
+}
+
+.pui-kt__back {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__back svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pui-kt__chatbar-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-bold);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-kt__chatbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 日期胶囊 */
+.pui-kt__divider {
+  margin: var(--pui-space-3) 0 var(--pui-space-2);
+  text-align: center;
+}
+
+.pui-kt__divider-pill,
+.pui-kt__system {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: var(--pui-font-caption1);
+  color: rgba(0, 0, 0, 0.55);
+  line-height: 1.4;
+}
+
+.pui-kt__divider-caret {
+  width: 12px;
+  height: 12px;
+  margin-left: 3px;
+  color: rgba(0, 0, 0, 0.42);
+}
+
+/* ── 系统消息：居中的一行灰字胶囊 ──
+   没有气泡、没有头像、没有时刻。真机的群提示就是这个样子 ——
+   套上任何一侧的气泡样式都会让人误以为它是某个人说的话。
+   底色与日期胶囊同系（半透明白），因为它俩是同一类东西：都不是"谁说的话"。 */
+.pui-kt__system {
+  /* 胶囊只包住文字：块级 + 满宽会拉成一条横贯屏幕的带子，那是横幅不是提示 */
+  width: fit-content;
+  max-width: calc(100% - 60px);
+  margin: 10px auto;
+  letter-spacing: var(--pui-tracking-body);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.pui-kt__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px var(--pui-space-3);
+}
+
+/* 组与组之间留一点气口，组内保持紧凑 —— 否则头像一去掉，几段对话会糊成一片 */
+.pui-kt__row[data-group='start'] {
+  margin-top: 9px;
+}
+
+.pui-kt__row[data-side='right'] {
+  flex-direction: row-reverse;
+}
+
+/* 头像格只在对方消息里出现（模板里 v-if 掉了我方那一格），
+   组内没有头像的消息仍然占着这一格，气泡才不会一会儿缩进一会儿贴边。
+   **不给高度**：给它 height:34px 会把组内每条短消息的行高都撑到 34px */
+.pui-kt__avatar-slot {
+  flex: 0 0 34px;
+  width: 34px;
+  align-self: flex-start;
+}
+
+.pui-kt__author {
+  margin: 0 0 2px;
+  padding-top: 2px;
+  box-sizing: border-box;
+  color: rgb(0 0 0 / 55%);
+  font-size: var(--pui-font-caption1);
+  font-weight: 400;
+  letter-spacing: var(--pui-tracking-body);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.pui-kt__bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  /* 子项按内容收缩，**不要**让它们被拉伸成整列宽：
+     单图的外框宽度是跟图片走的（见下面的 data-count='1'），
+     align-items 一旦是默认的 stretch，外框还是会被拉到列宽，
+     图片贴左、右边空出一大块 —— 我方的图就贴不到气泡右缘了 */
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 70%;
+}
+
+.pui-kt__bubble-wrap--media {
+  max-width: 76%;
+}
+
+.pui-kt__row[data-side='right'] .pui-kt__bubble-wrap {
+  align-items: flex-end;
+}
+
+.pui-kt__bubble {
+  padding: 7px 11px;
+
+  border-radius: 14px;
+  border-top-left-radius: 4px;
+  background: #fff;
+  color: var(--pui-label);
+  font-size: var(--pui-font-subhead);
+  line-height: 1.42;
+  letter-spacing: var(--pui-tracking-body);
+  overflow-wrap: anywhere;
+  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.05);
+}
+
+.pui-kt__row[data-side='right'] .pui-kt__bubble {
+  border-radius: 14px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 4px;
+
+  background: #f9e547;
+  color: #1c1c1e;
+}
+
+/* ── 气泡行 + 语音「转」按钮 ──
+   气泡和「转」按钮横向并排：按钮必须落在气泡**外面**，
+   塞进气泡里会把这句语音的底色也染到按钮上。 */
+.pui-kt__bubble-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 我方消息整行镜像：按钮跑到气泡左侧，跟"贴右边"的气泡成镜像关系 */
+.pui-kt__row[data-side='right'] .pui-kt__bubble-line {
+  flex-direction: row-reverse;
+}
+
+.pui-kt__transcribe {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 28%);
+  /* 环和「转」字共用一个墨色，改一处两处一起变 —— 用户要求"箭头跟字体一样黑"，
+     分成两个写死的色值迟早再次跑偏 */
+  --pui-kt-transcribe-ink: #3d444a;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__transcribe-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc((100% - 2px) * 5 / 6);
+  height: calc((100% - 2px) * 5 / 6);
+  transform: translate(-50%, -50%);
+  color: var(--pui-kt-transcribe-ink);
+  pointer-events: none;
+}
+
+/* 字压在浅底上，用同一个墨色才读得清；字号比环的内径小一号，别把环顶穿 */
+.pui-kt__transcribe-text {
+  position: relative;
+  color: var(--pui-kt-transcribe-ink);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.pui-kt__transcribe--on {
+  background: rgb(255 255 255 / 62%);
+}
+
+/* 转写气泡：就是普通白气泡，只补一点与语音气泡之间的间距
+   （bubble-wrap 是 column 且没有 gap，间距只能给在这里）。
+   **四角同弧度** —— 它是独立的一条转写，不是"接着上一条"的连发尾巴，
+   所以不套 KakaoTalk 那个左上近直角的特征。右侧规则特异性更高，得带上它一起改 */
+.pui-kt__bubble--transcript,
+.pui-kt__row[data-side='right'] .pui-kt__bubble--transcript {
+  margin-top: 5px;
+  max-width: 100%;
+  border-radius: 14px;
+}
+
+.pui-kt__image-hint {
+  color: var(--pui-label-2);
+  font-size: var(--pui-font-footnote);
+}
+
+.pui-kt__bubble[data-type='image'],
+.pui-kt__bubble[data-type='sticker'] {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pui-kt__row[data-side='right'] .pui-kt__bubble[data-type='image'],
+.pui-kt__row[data-side='right'] .pui-kt__bubble[data-type='sticker'] {
+  background: transparent;
+}
+
+.pui-kt__sticker {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.pui-kt__sticker img {
+  display: block;
+  width: 130px;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── 语音条 ──
+   宽度由组件按时长算（voiceWidth），这里只管内部三段：播放三角 / 波形 / 时长。
+   整条**不做成按钮**：作品是只读的，点下去不会有声音，显示成可点反而是骗人。 */
+
+.pui-kt__bubble[data-type='voice'],
+.pui-kt__row[data-side='right'] .pui-kt__bubble[data-type='voice'] {
+  border-radius: 999px;
+}
+
+.pui-kt__voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.pui-kt__voice-play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+}
+
+.pui-kt__voice-play svg {
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+}
+
+.pui-kt__voice-wave {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5px;
+  height: 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pui-kt__voice-wave i {
+  flex: 1 1 0;
+  min-width: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.pui-kt__voice-time {
+  flex: none;
+  font-size: var(--pui-font-caption1);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.62;
+}
+
+/* ── 通话消息 ──
+   图标 + 文案 + 尾部标注一行排开。保持普通气泡形状，不做语音那样的胶囊 ——
+   通话记录在真机里就是一条普通气泡。整条不是按钮：作品只读，按下不会真的拨出。 */
+.pui-kt__call {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+}
+
+.pui-kt__call-icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  opacity: 0.85;
+}
+
+.pui-kt__call-label {
+  flex: none;
+}
+
+/* 已接通的时长与语音条同一档弱化灰；未接通才转红。
+   红色只给标注：图标和主文案保持正常色 —— 连发几条未接通时，
+   通体泛红会把整屏都变成警示，读者真正要读的只是那句「未接听/已取消」 */
+.pui-kt__call-note {
+  flex: none;
+  font-size: var(--pui-font-caption1);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.62;
+}
+
+.pui-kt__call[data-missed='true'] .pui-kt__call-note {
+  opacity: 1;
+  color: var(--pui-red);
+}
+
+/* ── 图片消息：单图整张发，多图封进**一个**圆角矩形 ──
+   单图 = 图片完整发过去，只限宽、高度按原比例长（不裁、不压扁、不套白边），
+          圆角长在图片自己身上 —— 它本身就是那个圆角矩形。
+   多图 = 整张图集只有一个圆角矩形：圆角与裁角都在**外框**上，里面的格子一律直角，
+          靠 1px 缝隙分开。拼起来是「一块」，不是几块各自圆角的小方图。
+   整体按张数排：2 / 4 张两列，其余三列 —— 4 张是 2×2，9 张是 3×3。
+   形状交给格子而不是图片：图片只负责 cover 填满，任何原始比例都不会把图集撑歪。 */
+.pui-kt__images {
+  display: grid;
+  gap: 1px;
+  /* 写死宽度而不是 100%：气泡是收缩包裹的，百分比宽度会跟「内容撑开气泡」互相等，
+   * 换成固定宽度后，1fr 分出来的格子尺寸就是确定的（两列 139、三列 92 左右） */
+  width: 280px;
+  max-width: 100%;
+  /* 圆角 + 裁角只在外框：格子是直角的，只有最外圈的四个角被裁圆 */
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pui-kt__images[data-cols='2'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.pui-kt__images[data-cols='3'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pui-kt__tile {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  /* 格子自己不带圆角：圆角属于整块图集 */
+  border-radius: 0;
+  background: #ececec;
+  /* 它是个 button（可点开查看器），显式清掉内边距与边框，
+     免得依赖全局 reset 的细节 */
+  padding: 0;
+  border: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__tile:active .pui-kt__image {
+  opacity: 0.82;
+}
+
+.pui-kt__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 跟随格子：多图时是 0（拼成一块），单图时是 12px */
+  border-radius: inherit;
+}
+
+/* 单图：不套正方形（竖图被裁掉半截就毁了），格子收缩包住图片本身。
+   宽度必须是 auto —— 继承多图的 280px 会让外框比图片宽出一截：
+   图靠左、框贴右（我方），看上去就是"图片没跟气泡对齐"。 */
+.pui-kt__images[data-count='1'] {
+  display: block;
+  width: auto;
+  /* 只有一张时圆角就该长在图上，外框不需要再裁一次 */
+  border-radius: 0;
+  overflow: visible;
+}
+
+.pui-kt__images[data-count='1'] .pui-kt__tile {
+  width: fit-content;
+  aspect-ratio: auto;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.pui-kt__images[data-count='1'] .pui-kt__image {
+  width: auto;
+  height: auto;
+  max-width: 200px;
+  /* 超长截图（手机截屏是 9:19.5）如果不封顶，一条消息能占满整屏 */
+  max-height: 300px;
+  object-fit: contain;
+}
+
+/* 时间贴气泡下沿（真机的时间永远在气泡底边，不在顶边） */
+.pui-kt__time {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  font-size: 0.625rem;
+  color: rgba(0, 0, 0, 0.38);
+  padding-bottom: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 底部输入条（只读装饰） */
+.pui-kt__composer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 6px 12px calc(var(--pui-homebar-h) + 6px);
+  padding: 6px;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.36);
+}
+
+.pui-kt__composer-plus {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__composer-plus svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pui-kt__composer-plus.pui-kt__composer-plus--ping {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* 输入框：原本只是一行占位文字，换成真 <input> 后外观必须和那行字一模一样
+   —— 透明底、无边框、字体继承、提示色同灰，否则白胶囊里会凭空多出一个方框 */
+.pui-kt__composer-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__composer-field::placeholder {
+  color: rgba(0, 0, 0, 0.34);
+  opacity: 1;
+}
+
+/* 全局的键盘焦点蓝环落在白胶囊里太突兀：输入时只留文字光标 */
+.pui-kt__composer-field:focus,
+.pui-kt__composer-field:focus-visible {
+  outline: none;
+}
+
+/* 表情 / 语音：从裸 svg 变成按钮，尺寸不变（21px），内部 svg 撑满 */
+.pui-kt__composer-emoji,
+.pui-kt__composer-voice {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-kt__composer-emoji svg,
+.pui-kt__composer-voice svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pui-kt__composer-emoji.pui-kt__composer-icon--ping,
+.pui-kt__composer-voice.pui-kt__composer-icon--ping {
+  opacity: 0.4;
+}
+
+/* ── 屏幕切换：进/出方向必须对称 ── */
+.pui-screen-push-enter-from {
+  transform: translateX(100%);
+}
+
+.pui-screen-push-leave-to {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-screen-pop-enter-from {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-screen-pop-leave-to {
+  transform: translateX(100%);
+}
+
+.pui-screen-push-enter-active,
+.pui-screen-push-leave-active,
+.pui-screen-pop-enter-active,
+.pui-screen-pop-leave-active {
+  transition:
+    transform 260ms var(--pui-ease-out),
+    opacity 260ms var(--pui-ease-out);
+  will-change: transform;
+}

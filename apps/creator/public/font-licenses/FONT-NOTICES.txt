@@ -1,0 +1,10 @@
+Locally hosted webfont subsets of Noto Sans SC and Noto Serif SC.
+Original font family names are preserved in font metadata.
+Source: https://github.com/notofonts/noto-cjk
+License: SIL Open Font License 1.1, see OFL.txt.
+
+Noto Sans SC
+© 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+
+Noto Serif SC
+© 2017-2023 Adobe (http://www.adobe.com/).

@@ -1,0 +1,1327 @@
+/* ══ 骨架 ══ */
+.pui-ig {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: var(--pui-label);
+}
+
+.pui-ig__pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.pui-ig__pane--dark {
+  background: #000;
+  color: #fff;
+}
+
+/* 栈屏浮层：盖住整个手机屏（含底栏），等返回键才让位 */
+.pui-ig__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.pui-ig-fade-enter-from,
+.pui-ig-fade-leave-to { opacity: 0; }
+.pui-ig-fade-enter-active,
+.pui-ig-fade-leave-active { transition: opacity 180ms ease-out; }
+
+/* ══ 评论底部弹层 ══ */
+.pui-ig-sheet-enter-from .pui-ig__sheet,
+.pui-ig-sheet-leave-to .pui-ig__sheet { transform: translateY(100%); }
+.pui-ig-sheet-enter-active .pui-ig__sheet,
+.pui-ig-sheet-leave-active .pui-ig__sheet { transition: transform 240ms cubic-bezier(0.32, 0.72, 0.3, 1); }
+.pui-ig-sheet-enter-from,
+.pui-ig-sheet-leave-to { opacity: 0; }
+.pui-ig-sheet-enter-active,
+.pui-ig-sheet-leave-active { transition: opacity 200ms ease-out; }
+
+.pui-ig__sheet-dim {
+  position: absolute;
+  inset: 0;
+  z-index: var(--pui-z-overlay, 60);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pui-ig__sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: 78%;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  color: var(--pui-label);
+  overflow: hidden;
+}
+
+/* 把手：真机的弹层顶部有一条可拖的小横条，这里兼作「点击收起」的热区 */
+.pui-ig__sheet-grab {
+  flex: none;
+  display: block;
+  width: 100%;
+  height: 22px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.pui-ig__sheet-grab::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 36px;
+  height: 4.5px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.pui-ig__sheet-title {
+  flex: none;
+  margin: 0;
+  padding: 0 0 10px;
+  text-align: center;
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__sheet-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--pui-space-4);
+}
+
+.pui-ig__sheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-ig__sheet-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.pui-ig__sheet-item--reply { padding-left: 0; }
+
+.pui-ig__sheet-body { flex: 1 1 auto; min-width: 0; }
+
+.pui-ig__sheet-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0;
+}
+
+.pui-ig__sheet-author {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__sheet-time {
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-secondary, rgba(0, 0, 0, 0.5));
+}
+
+.pui-ig__sheet-text {
+  margin: 3px 0 0;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.45;
+}
+
+.pui-ig__sheet-ops {
+  display: flex;
+  gap: 16px;
+  margin: 6px 0 0;
+  font-size: var(--pui-font-caption1);
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label-secondary, rgba(0, 0, 0, 0.5));
+}
+
+.pui-ig__sheet-more {
+  display: block;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-secondary, rgba(0, 0, 0, 0.5));
+  cursor: pointer;
+}
+
+.pui-ig__sheet-replies {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-ig__sheet-like {
+  flex: none;
+  align-self: center;
+  color: var(--pui-label);
+}
+
+.pui-ig__sheet-like svg { width: 17px; height: 17px; }
+
+.pui-ig__sheet-empty {
+  margin: 0;
+  padding: 28px 0;
+  text-align: center;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-secondary, rgba(0, 0, 0, 0.5));
+}
+
+/* 底部：输入条（装饰） */
+.pui-ig__sheet-foot {
+  flex: none;
+  padding: 8px var(--pui-space-4) 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.pui-ig__sheet-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pui-ig__sheet-inputicon {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  color: var(--pui-label);
+}
+
+/* ══ 顶栏 ══ */
+
+.pui-ig__topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: var(--pui-statusbar-h) var(--pui-space-4) 0;
+  box-sizing: content-box;
+  background: #fff;
+}
+
+.pui-ig__wordmark {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: 'Snell Roundhand', 'Segoe Script', 'Brush Script MT', cursive;
+  font-size: 1.65rem;
+  font-weight: 600;
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ig__topbar-icon {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  color: var(--pui-label);
+}
+
+.pui-ig__topbar-icon svg { width: 100%; height: 100%; }
+
+.pui-ig__topbar-icon--light { color: #fff; }
+
+/* ══ 二级顶栏 ══ */
+.pui-ig__subbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: calc(var(--pui-statusbar-h) + 6px) var(--pui-space-3) 8px;
+  background: #fff;
+}
+
+.pui-ig__subbar-title {
+  flex: 1 1 auto;
+  margin: 0;
+  text-align: center;
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__subbar-title--handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 自己主页的标题是回桌面入口：按钮 Reset，外观与 h1 完全一致 */
+.pui-ig__subbar-title--link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pui-ig__subbar-spacer { flex: 0 0 38px; }
+
+.pui-ig__back {
+  flex: 0 0 38px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pui-ig__back svg { width: 24px; height: 24px; }
+.pui-ig__back--light { color: #fff; }
+
+/* ══ Stories 托盘 ══
+   在滚动内容里（随 feed 滚），不是吸顶块：与帖子之间不画分隔线，
+   真机里这段和帖子是同一层白底，横线只会凭空出现。 */
+.pui-ig__tray {
+  display: flex;
+  gap: var(--pui-space-4);
+  overflow-x: auto;
+  padding: 6px var(--pui-space-4) 12px;
+  scrollbar-width: none;
+}
+
+.pui-ig__tray::-webkit-scrollbar { display: none; }
+
+.pui-ig__tray-item {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  width: 76px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 未看：渐变环；全看过：灰环；自己：无环 + 黑色加号。
+   环粗细用 padding 模拟，避免双层元素 */
+.pui-ig__tray-ring {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.pui-ig__tray-item--seen .pui-ig__tray-ring {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.pui-ig__tray-ring .pui-avatar {
+  box-sizing: content-box;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.pui-ig__tray-ownwrap {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.pui-ig__tray-ownwrap .pui-avatar {
+  box-sizing: content-box;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background-clip: padding-box;
+  box-shadow: none;
+}
+.pui-ig__tray-ownwrap .pui-avatar[data-has-image='true'] { background: transparent; }
+
+.pui-ig__tray-plus {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
+
+.pui-ig__tray-plus svg { width: 11px; height: 11px; }
+
+.pui-ig__tray-name {
+  max-width: 76px;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ig__pstory {
+  display: flex;
+  gap: var(--pui-space-4);
+  overflow-x: auto;
+  padding: 14px var(--pui-space-4) 18px;
+  scrollbar-width: none;
+}
+
+.pui-ig__pstory::-webkit-scrollbar { display: none; }
+
+.pui-ig__pstory-add {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  color: var(--pui-label);
+}
+
+.pui-ig__pstory-add::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid rgba(0, 0, 0, 0.22);
+  border-radius: 50%;
+}
+
+.pui-ig__pstory-add svg { width: 28px; height: 28px; }
+
+.pui-ig__pstory-ring {
+  display: inline-flex;
+  padding: 2.5px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.pui-ig__pstory-img {
+  box-sizing: content-box;
+  width: 59px;
+  height: 59px;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.pui-ig__pstory-ring .pui-avatar {
+  box-sizing: content-box;
+  border: 4px solid #fff;
+  border-radius: 50%;
+}
+
+/* ══ 帖子卡 ══ */
+.pui-ig__feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-ig__card {
+  padding-bottom: var(--pui-space-4);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.pui-ig__card--detail { border-bottom: 0; }
+
+.pui-ig__card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px var(--pui-space-4);
+}
+
+.pui-ig__card-avatar {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pui-ig__card-handle {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ig__card-time {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-3);
+}
+
+.pui-ig__card-more {
+  flex: none;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: var(--pui-label);
+}
+
+.pui-ig__card-more svg { width: 100%; height: 100%; }
+
+/* 图片区：strip 平移实现轮播，容器裁掉出界部分 */
+.pui-ig__media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: #f2f2f2;
+  /* 横向滑动留给 JS 翻页，纵向仍可滚动 feed */
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.pui-ig__media:active {
+  cursor: grabbing;
+}
+
+.pui-ig__media-strip {
+  display: flex;
+  height: 100%;
+  transition: transform 260ms var(--pui-ease-out);
+}
+
+.pui-ig__media-img {
+  flex: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+.pui-ig__media-count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: var(--pui-font-caption2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-ig__media-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pui-ig__media-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.pui-ig__media-dots i.pui-ig__media-dot--on { background: #3897f0; }
+
+.pui-ig__actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 9px var(--pui-space-4) 0;
+  color: var(--pui-label);
+}
+
+/* 动作行单元：图标 + 可选计数字。收藏格 margin-left:auto 推到最右 */
+.pui-ig__actbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ig__actbtn--save { margin-left: auto; }
+
+/* 详情页动作行仍是旧结构（图标组），保留这条以免丢间距 */
+.pui-ig__actions-main {
+  display: inline-flex;
+  gap: 15px;
+}
+
+.pui-ig__actbtn--on { color: #ff3040; }
+
+.pui-ig__act { width: 25px; height: 25px; flex: none; }
+
+.pui-ig__actnum {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+}
+
+.pui-ig__actbtn--on .pui-ig__actnum { color: var(--pui-label); }
+
+.pui-ig__likes {
+  margin: 9px var(--pui-space-4) 0;
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__caption {
+  margin: 4px var(--pui-space-4) 0;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.pui-ig__caption-author {
+  font-weight: var(--pui-weight-semibold);
+  margin-right: 6px;
+}
+
+/* feed 卡的正文可点进帖子详情 */
+.pui-ig__caption--link { cursor: pointer; }
+
+/* ══ 评论入口（详情页卡下方）══ */
+.pui-ig__commentlink {
+  display: block;
+  border: 0;
+  padding: 4px var(--pui-space-4) 0;
+  background: transparent;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-3);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ══ 评论 ══ */
+.pui-ig__comments {
+  margin: 0;
+  padding: var(--pui-space-2) 0 0;
+  list-style: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.pui-ig__comment {
+  display: flex;
+  gap: 10px;
+  padding: 8px var(--pui-space-4);
+}
+
+.pui-ig__comment-body { flex: 1 1 auto; min-width: 0; }
+
+.pui-ig__comment-text {
+  margin: 0;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.45;
+}
+
+.pui-ig__comment-meta {
+  margin: 3px 0 0;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-3);
+}
+
+.pui-ig__comment-heart {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 4px;
+  color: var(--pui-label-3);
+}
+
+.pui-ig__commentbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--pui-space-4) calc(10px + var(--pui-homebar-h));
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  background: #fff;
+}
+
+.pui-ig__commentbar-field {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-3);
+  user-select: none;
+}
+
+/* ══ Story 查看器 ══ */
+.pui-ig__viewer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--pui-z-overlay, 60);
+  overflow: hidden;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+/* 满屏模糊背景：同一张图 cover 铺满，大半径高斯模糊 + 放大抵消边缘虚边 */
+.pui-ig__stage-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(32px);
+  transform: scale(1.15);
+  pointer-events: none;
+}
+
+.pui-ig__stage-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.pui-ig__stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  /* 横向手势归拖拽翻帧；查看器没有纵向滚动，pan-y 只是为了不劫持系统手势 */
+  touch-action: pan-y;
+}
+
+.pui-ig__progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 3px;
+  padding: calc(var(--pui-statusbar-h) + 8px) var(--pui-space-3) 0;
+}
+
+.pui-ig__progress i {
+  flex: 1 1 0;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.pui-ig__progress i.pui-ig__progress-seg--on { background: #fff; }
+
+.pui-ig__viewer-head {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 14px);
+  left: var(--pui-space-3);
+  right: 46px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pui-ig__viewer-name {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__viewer-time {
+  font-size: var(--pui-font-caption1);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pui-ig__viewer-close {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 14px);
+  right: var(--pui-space-3);
+  display: inline-flex;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.pui-ig__viewer-close svg { width: 22px; height: 22px; }
+
+.pui-ig__stage-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pui-ig__stage-hit--prev { left: 0; }
+.pui-ig__stage-hit--next { right: 0; }
+
+/* 前景卡：无圆角、无卡片底色，整张图按比例铺满舞台；
+   宽图上下露模糊底、窄图左右露模糊底，永不裁切 */
+.pui-ig__stage-card {
+  transition: transform 160ms ease;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pui-ig__stage-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pui-ig__stage-caption {
+  position: absolute;
+  left: var(--pui-space-4);
+  right: var(--pui-space-4);
+  bottom: calc(64px + var(--pui-homebar-h));
+  margin: 0;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.45;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.pui-ig__viewer-foot {
+  position: absolute;
+  left: var(--pui-space-4);
+  right: var(--pui-space-4);
+  bottom: calc(12px + var(--pui-homebar-h));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pui-ig__viewer-reply {
+  flex: 1 1 auto;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  font-size: var(--pui-font-subhead);
+  color: rgba(255, 255, 255, 0.9);
+  user-select: none;
+}
+
+.pui-ig__viewer-act { flex: none; width: 25px; height: 25px; }
+
+/* ══ 个人主页 ══ */
+.pui-ig__profile-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pui-ig__profile { padding-bottom: var(--pui-space-4); }
+
+.pui-ig__profile-statrow {
+  display: flex;
+  align-items: center;
+  gap: var(--pui-space-3);
+  padding: var(--pui-space-4) var(--pui-space-4) 0;
+}
+
+.pui-ig__profile-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(86px + 8px);
+  height: calc(86px + 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pui-ig__profile-avatar-ring {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid #d5d9dd;
+  border-radius: 50%;
+}
+
+.pui-ig__profile-avatar-add {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  width: 27%;
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #17191c;
+  color: #fff;
+}
+
+.pui-ig__profile-avatar-add svg { width: 72%; height: 72%; }
+
+.pui-ig__profile-stats {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: space-around;
+}
+
+.pui-ig__profile-info {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pui-ig__profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label);
+}
+
+.pui-ig__profile-stat b {
+  font-size: var(--pui-font-title3);
+  font-weight: var(--pui-weight-semibold);
+}
+
+/* 粉丝 / 关注统计是可点按钮（跳列表页）：Reset 按钮外观，与纯展示的帖子数一致 */
+.pui-ig__profile-stat--link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ══ 关注关系列表页 ══ */
+.pui-ig__followsearch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px var(--pui-space-4) 8px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.pui-ig__followsearch svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.pui-ig__followsearch input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label);
+}
+
+.pui-ig__followsearch input:focus { outline: none; }
+
+.pui-ig__followsearch-clear {
+  display: inline-flex;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.pui-ig__followsearch-clear svg { width: 16px; height: 16px; }
+
+.pui-ig__followtabs {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 4px;
+}
+
+.pui-ig__followtab {
+  flex: 1 1 0;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-ig__followtab--on { color: var(--pui-label); }
+
+.pui-ig__followlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-ig__followrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px var(--pui-space-4);
+}
+
+/* 头像环复用托盘的渐变环几何（padding 环 + 白描边头像） */
+.pui-ig__followrow .pui-ig__tray-ring { flex: none; }
+
+.pui-ig__followrow-id {
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pui-ig__followrow-handle {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ig__followrow-name {
+  font-size: var(--pui-font-caption1);
+  color: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ig__followrow-msg {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: var(--pui-font-caption1);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__follow-none {
+  margin: 24px var(--pui-space-4);
+  text-align: center;
+  font-size: var(--pui-font-subhead);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.pui-ig__profile-name {
+  min-width: 0;
+  margin: 0 0 0 calc(16.67% - 1.2em);
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__profile-bio {
+  margin: 4px var(--pui-space-4) 0;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.pui-ig__profile-link {
+  margin: 4px var(--pui-space-4) 0;
+  font-size: var(--pui-font-subhead);
+  color: #00376b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-ig__profile-btns {
+  display: flex;
+  gap: 7px;
+  padding: 14px var(--pui-space-4) 0;
+}
+
+.pui-ig__profile-btn {
+  flex: 1 1 0;
+  padding: 7px 0;
+  border-radius: 9px;
+  background: var(--pui-fill);
+  text-align: center;
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  user-select: none;
+}
+
+.pui-ig__profile-btn--primary { background: rgba(56, 151, 240, 0.18); color: #3897f0; }
+
+.pui-ig__profile-btn--icon { flex: 0 0 42px; display: inline-flex; align-items: center; justify-content: center; }
+.pui-ig__profile-btn--icon svg { width: 16px; height: 16px; }
+
+.pui-ig__profile-tabs {
+  display: flex;
+  margin-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.09);
+}
+
+.pui-ig__profile-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 0;
+  color: var(--pui-label-3);
+}
+
+.pui-ig__profile-tab--on {
+  color: var(--pui-label);
+  box-shadow: inset 0 2px 0 var(--pui-label);
+}
+
+.pui-ig__profile-tab svg { width: 21px; height: 21px; }
+
+/* 九宫格：同照片应用先例。2px 缝、1:1、cover 裁切 */
+.pui-ig__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.pui-ig__cell {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: #f2f2f2;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pui-ig__cell-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pui-ig__cell-img--text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-3);
+}
+
+/* 多图角标：右上角叠层图标，描白边保证在浅色图上可读 */
+.pui-ig__cell-stack {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 17px;
+  height: 17px;
+}
+
+/* ══ Reels ══ */
+.pui-ig__reels-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: calc(var(--pui-statusbar-h) + 6px) var(--pui-space-3) 8px;
+}
+
+.pui-ig__reels-spacer { flex: 0 0 26px; }
+
+.pui-ig__reels-title {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: var(--pui-font-title3);
+  font-weight: var(--pui-weight-semibold);
+  /* 暗底上的标题也是回桌面入口（与首页字标同规则）：按钮 Reset */
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pui-ig__reels-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 var(--pui-space-4) var(--pui-space-4);
+}
+
+.pui-ig__reels-video {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #20242e, #101218);
+}
+
+.pui-ig__reels-play { width: 54px; height: 54px; opacity: 0.85; }
+
+.pui-ig__reels-side {
+  position: absolute;
+  right: var(--pui-space-3);
+  bottom: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.pui-ig__reels-side-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+}
+
+.pui-ig__reels-side-item svg { width: 26px; height: 26px; }
+
+.pui-ig__reels-side-item i {
+  font-style: normal;
+  font-size: var(--pui-font-caption1);
+}
+
+.pui-ig__reels-author {
+  position: absolute;
+  left: var(--pui-space-4);
+  bottom: 74px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+}
+
+.pui-ig__reels-handle {
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+}
+
+.pui-ig__reels-follow {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 7px;
+  font-size: var(--pui-font-caption1);
+}
+
+.pui-ig__reels-caption {
+  position: absolute;
+  left: var(--pui-space-4);
+  right: 64px;
+  bottom: 40px;
+  margin: 0;
+  font-size: var(--pui-font-caption1);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ══ 底部 tab ══ */
+.pui-ig__tabbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: calc(48px + var(--pui-homebar-h));
+  padding: 0 var(--pui-space-5) var(--pui-homebar-h);
+  border-top: 1px solid rgba(0, 0, 0, 0.09);
+  background: #fff;
+}
+
+.pui-ig__tab {
+  position: relative;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--pui-label-2);
+  cursor: pointer;
+}
+
+.pui-ig__tab svg { width: 25px; height: 25px; }
+.pui-ig__tab--on { color: var(--pui-label); }
+.pui-ig__actbtn:is(:active,.x-feedback--pressed),.pui-ig__topbar-icon:is(:active,.x-feedback--pressed),.pui-ig__profile-tab:is(:active,.x-feedback--pressed),.pui-ig__tray-item:is(:active,.x-feedback--pressed){opacity:.5}
+.pui-ig__profile-btn:is(:active,.x-feedback--pressed){background:#d4d4d4}
+.pui-ig__tab:is(:active, .x-feedback--pressed) { opacity: 0.5; }
+
+/* Reels 是暗底全屏：底栏转黑、图标转白 */
+.pui-ig__tabbar--dark {
+  background: #000;
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.pui-ig__tabbar--dark .pui-ig__tab {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pui-ig__tabbar--dark .pui-ig__tab--on {
+  color: #fff;
+}
+
+.pui-ig__tab-avatar {
+  display: inline-flex;
+  border-radius: 50%;
+}
+
+.pui-ig__tab-avatar .pui-avatar {
+  border-radius: 50%;
+}
+.pui-ig{--hashtag-color:#4d4bb9}
+.pui-ig__actions{gap:12px}
+.pui-ig__actnum{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pui-ig__actbtn{gap:4px;min-width:0}
+@media(max-width:360px){.pui-ig__actions{gap:8px}.pui-ig__act{width:23px;height:23px}.pui-ig__actnum{font-size:13px}}

@@ -1,0 +1,897 @@
+.pui-pho {
+  --pui-pho-inset: 16px;
+  --pui-pho-gap: 2px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  color: var(--pui-label);
+}
+
+.pui-pho__stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pui-pho__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.pui-pho__screen--light {
+  background: #fff;
+}
+
+/* 相簿密码盘的载体：铺满整层照片应用，压在 tabbar 之上 */
+.pui-pho__lockpad {
+  position: absolute;
+  inset: 0;
+  z-index: var(--pui-z-overlay);
+}
+
+.pui-pho-lockfade-leave-active {
+  transition: opacity 180ms linear;
+}
+
+.pui-pho-lockfade-leave-to {
+  opacity: 0;
+}
+
+/*
+ * 「无动效」那条路（验密通过）。
+ *
+ * 名字取 `none` 是刻意的：这两个选择器里**没有任何过渡/动画属性**，
+ * 所以 Vue 的 getTransitionInfo 量到的时长是 0，判定「没有过渡」，
+ * 下一帧就把旧节点摘掉。visibility:hidden 是同步生效的，用来抢那一帧：
+ *   · 相簿列表（旧的根屏）在 DOM 里排在相簿屏之后，本来就画在上面，
+ *     不立刻藏掉的话会先露一帧相簿列表，看着像闪；
+ *   · 密码盘同理，它压在最上层（--pui-z-overlay）。
+ * 两个都藏掉后，这一帧看到的就是相簿屏本身 —— 没有滑屏、没有淡化。
+ * ⚠️ 别在这里补 opacity/transform 的过渡，"秒切"就没了。
+ */
+.pui-pho-screen-none-leave-active,
+.pui-pho-locknone-leave-active {
+  visibility: hidden;
+}
+
+/* ── 顶部导航 ──────────────────────────────────────── */
+.pui-pho__nav {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: calc(var(--pui-statusbar-h) + 4px) 12px 6px;
+  background: #fff;
+}
+
+/*
+ * 根屏标题栏的底部留白是"大标题 → 第一屏内容"的距离，不是排版缝隙。
+ * 大标题行高吃掉字面下沿之后只剩 2px，视觉上标题像被内容顶住了，
+ * 这里给到 12px，与月份标题自带的 14px 上内距叠出 iOS 那样的呼吸感。
+ */
+.pui-pho__nav--root {
+  grid-template-columns: 1fr auto;
+  padding-left: var(--pui-pho-inset);
+  padding-right: var(--pui-pho-inset);
+  padding-bottom: 12px;
+}
+
+.pui-pho__nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  padding: 4px 6px 4px 0;
+  border: 0;
+  background: none;
+  color: var(--pui-blue);
+  font: inherit;
+  font-size: var(--pui-font-body);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__nav-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pui-pho__nav-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pui-label);
+  font: inherit;
+  font-size: var(--pui-font-large-title);
+  font-weight: var(--pui-weight-bold);
+  letter-spacing: var(--pui-tracking-large);
+  line-height: var(--pui-leading-large);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 详情页的标题是居中小标题，不是大标题 */
+.pui-pho__nav:not(.pui-pho__nav--root) .pui-pho__nav-title {
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-semibold);
+  letter-spacing: 0;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.pui-pho__nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 32px;
+  height: 32px;
+  margin-right: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--pui-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__nav-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pui-pho__nav-icon:active {
+  opacity: 0.45;
+}
+
+/* ── 搜索态 ──────────────────────────────────────────
+ * 输入框占掉标题那一格，"取消"贴在屏右 —— 与 iOS 搜索栏同一套版式。
+ * 高度锁 36px：标题行是 34px × 1.12 ≈ 38px，切换时只差 2px，看不出跳动。
+ */
+.pui-pho__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #e9e9eb;
+  color: var(--pui-label-2);
+}
+
+.pui-pho__search-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.pui-pho__search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pui-label);
+  font: inherit;
+  font-size: var(--pui-font-body);
+  outline: none;
+  appearance: none;
+}
+
+/* Chrome 自带的清空叉与我们的按钮重复，而且颜色不可控 */
+.pui-pho__search-input::-webkit-search-cancel-button,
+.pui-pho__search-input::-webkit-search-decoration {
+  display: none;
+}
+
+.pui-pho__search-input::placeholder {
+  color: var(--pui-label-3);
+}
+
+.pui-pho__search-clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: rgba(60, 60, 67, 0.4);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__search-clear svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pui-pho__search-cancel {
+  flex: none;
+  padding: 0 0 0 10px;
+  border: 0;
+  background: none;
+  color: var(--pui-blue);
+  font: inherit;
+  font-size: var(--pui-font-body);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__search-cancel:active {
+  opacity: 0.45;
+}
+
+/* ── 月份分组与网格 ───────────────────────────────── */
+.pui-pho__group + .pui-pho__group {
+  margin-top: 22px;
+}
+
+.pui-pho__month {
+  margin: 0;
+  padding: 14px var(--pui-pho-inset) 8px;
+  font-size: var(--pui-font-subhead);
+  font-weight: var(--pui-weight-semibold);
+  letter-spacing: var(--pui-tracking-body);
+  color: var(--pui-label);
+}
+
+.pui-pho__count {
+  margin: 0;
+  padding: 4px var(--pui-pho-inset) 10px;
+  color: var(--pui-label-2);
+  font-size: var(--pui-font-footnote);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-pho__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--pui-pho-gap);
+}
+
+.pui-pho__tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--pui-gray-5);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__tile:active {
+  opacity: 0.82;
+}
+
+.pui-pho__tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 取不到图时留一个占位格：空白会让整屏网格断掉节奏 */
+.pui-pho__tile-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, var(--pui-gray-5) 0%, var(--pui-gray-4) 100%);
+}
+
+/* ── 相簿卡片 ──────────────────────────────────────── */
+.pui-pho__albums {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 14px;
+  padding: 6px var(--pui-pho-inset) 0;
+}
+
+.pui-pho__album {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__album:active {
+  opacity: 0.8;
+}
+
+/*
+ * 行高必须是 minmax(0, 1fr)，不能写 1fr。
+ *
+ * 1fr 的最小尺寸是内容尺寸（min-content），而一格只放一张图时（4 张及以上），
+ * img 的 height:100% 在没有确定行高的情况下退化成 auto —— 结果图片按自己的
+ * 原始比例把行撑高：3:4 的竖图撑到 85.5×114，两行 228 高，超出 172 的封面被
+ * 裁掉下半截；4:3 的横图则反向萎缩到 85.5×64，下面空出一块。
+ * 示例数据全是 600×600 的方图，所以这个坑一直没暴露。
+ *
+ * minmax(0, 1fr) 把行高的下限压成 0，行严格按封面均分，height:100% 找回参照，
+ * object-fit: cover 才真正生效 —— 图片被居中裁成正方形。
+ * 2 张 / 3 张的竖条排法不受影响：跨行的 img 本来就高 172。
+ */
+.pui-pho__album-cover {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--pui-gray-5);
+}
+
+.pui-pho__album-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 同上：grid item 的默认最小尺寸是内容尺寸，不归零就还会被图片原比例撑开 */
+  min-width: 0;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.pui-pho__album-cover[data-count='1'] img {
+  grid-area: 1 / 1 / 3 / 3;
+}
+
+.pui-pho__album-cover[data-count='2'] img {
+  grid-row: 1 / 3;
+}
+
+.pui-pho__album-cover[data-count='3'] img:first-child {
+  grid-area: 1 / 1 / 3 / 2;
+}
+
+.pui-pho__album-name {
+  font-size: var(--pui-font-footnote);
+  font-weight: var(--pui-weight-medium);
+  color: var(--pui-label);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pui-pho__album-count {
+  margin-top: -3px;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-pho__more {
+  margin-top: 26px;
+  padding: 0 var(--pui-pho-inset);
+}
+
+/* 分区标题用 title3，和上方的大标题、下方的列表行形成三级层次 */
+.pui-pho__more-title {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 0 9px;
+  font-size: var(--pui-font-title3);
+  font-weight: var(--pui-weight-semibold);
+  line-height: var(--pui-leading-title);
+  letter-spacing: var(--pui-tracking-title);
+  color: var(--pui-label);
+}
+
+.pui-pho__more-chevron {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: -1px;
+  color: var(--pui-gray);
+}
+
+/* 分组卡片底色用 gray-6、圆角 10，与白底拉出"这一块是一个整体"的层次（iOS inset grouped 规格） */
+.pui-pho__more-card {
+  border-radius: 10px;
+  background: var(--pui-gray-6);
+  overflow: hidden;
+}
+
+/*
+ * 行高 44px：与 iOS 18 Utilities 分区一致（对照实机截图，Utilities/Media Types 都是 44）。
+ * 多行时靠分隔线分缝 —— iOS 的分隔线从文字起点缩进（13 + 20 + 9 = 42px），
+ * 不横贯整卡；用 ::before 画，因为 button 上加 margin 会挤偏 flex。
+ */
+.pui-pho__more-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__more-row + .pui-pho__more-row {
+  border-radius: 0;
+}
+
+.pui-pho__more-row + .pui-pho__more-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 42px;
+  right: 0;
+  height: 0.5px;
+  background: var(--pui-separator);
+}
+
+.pui-pho__more-row:active {
+  background: var(--pui-fill);
+}
+
+.pui-pho__more-row svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--pui-label);
+}
+
+/* 行名称 17px regular —— iOS 分组列表的行文字是 regular，不是 semibold */
+.pui-pho__more-label {
+  flex: 1 1 auto;
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-regular);
+  color: var(--pui-label);
+}
+
+/* 张数 15px 次级灰，靠右 —— 与 iOS Utilities 行右侧的数字/锁同规格 */
+.pui-pho__more-count {
+  flex: none;
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-pho__more-lock {
+  flex: none;
+  display: flex;
+  align-items: center;
+  color: var(--pui-label-2);
+}
+
+.pui-pho__more-lock svg {
+  width: 20px;
+  height: 20px;
+  color: var(--pui-label-2);
+}
+
+/* ── 查看器（白底，iOS 照片样式） ───────────────────── */
+
+.pui-pho__pager {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 46px);
+  left: 0;
+  right: 0;
+  bottom: calc(var(--pui-homebar-h) + 116px);
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* 横向手势交给浏览器的原生滚动；纵向在这块区域没有可滚的东西 */
+  touch-action: pan-x;
+}
+
+/* 拖拽期间关掉吸附：否则每次写 scrollLeft 都会被拉回整页，手感像拽不动 */
+.pui-pho__pager[data-drag='true'] {
+  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
+.pui-pho__pager::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.pui-pho__slide {
+  flex: 0 0 100%;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.pui-pho__slide img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.pui-pho__broken {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--pui-label-3);
+  font-size: var(--pui-font-footnote);
+}
+
+.pui-pho__broken svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* 三块浮层共用：白底上用深色字，收起信息层时一起淡出 */
+.pui-pho__vbar,
+.pui-pho__thumbs,
+.pui-pho__vfoot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  color: var(--pui-label);
+  transition: opacity var(--pui-dur-fast) linear;
+}
+
+.pui-pho__vbar[data-on='false'],
+.pui-pho__thumbs[data-on='false'],
+.pui-pho__vfoot[data-on='false'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 顶栏：左返回 / 中两行标题 / 右 ⋯。三列 1fr auto 1fr 才能让标题真居中 */
+.pui-pho__vbar {
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: calc(var(--pui-statusbar-h) + 6px) 12px 6px;
+}
+
+.pui-pho__vback,
+.pui-pho__vmore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--pui-blue);
+}
+
+.pui-pho__vback {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__vback:active {
+  opacity: 0.5;
+}
+
+.pui-pho__vback svg,
+.pui-pho__vmore svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pui-pho__vmore {
+  justify-self: end;
+  /* span → button：复位浏览器默认边框/内边距/字体，否则 30×30 的圆会被撑偏 */
+  padding: 0;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__vtitle {
+  min-width: 0;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.pui-pho__vplace {
+  display: block;
+  max-width: 210px;
+  margin: 0 auto;
+  font-size: 13px;
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pui-pho__vstamp {
+  display: block;
+  /* 两行同属一个标题块，只把行间空隙松开 2px；再大就散成两块独立信息了 */
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--pui-label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 缩略图条 */
+/* 缩略图条：装得下就居中，装不下就从左边开始横向滚动。
+   对齐关键字前面的 safe 正好是这个语义 —— 溢出时退化成 start，
+   不会出现"居中把左边几张推到滚动区之外、拉不回来"的坑。
+   浏览器不认 safe 时退回普通居中/起始，也不影响可用性。 */
+.pui-pho__thumbs {
+  bottom: calc(var(--pui-homebar-h) + 56px);
+  display: flex;
+  justify-content: safe center;
+  gap: 4px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pui-pho__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.pui-pho__thumb {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pui-gray-5);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * 当前张描蓝边。
+ * 用 outline 而不是 box-shadow：inset 阴影画在背景之上、内容之下，
+ * 而这里的内容是铺满格子的 <img>，阴影会被整张图盖住 —— 看起来像没生效。
+ */
+.pui-pho__thumb.is-current {
+  outline: 2px solid var(--pui-blue);
+  outline-offset: -2px;
+}
+
+.pui-pho__thumb-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--pui-gray-5);
+}
+
+/* 操作栏：分享/信息/调整是纯外观，爱心/删除是真的改标记，见文件头第 6 条 */
+.pui-pho__vfoot {
+  bottom: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px calc(var(--pui-homebar-h) + 6px);
+}
+
+.pui-pho__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  /* span → button 的复位：尺寸/配色全部由这里决定，不吃 UA 默认样式 */
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--pui-blue);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__act svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pui-pho__actpill {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--pui-blue);
+}
+
+.pui-pho__actunit {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__actunit svg {
+  width: 21px;
+  height: 21px;
+}
+
+/* 已收藏：心形变实心，颜色仍是系统的蓝 */
+.pui-pho__actunit.is-on {
+  color: var(--pui-blue);
+}
+
+/*
+ * 按下即亮、抬起即灭（useTapFeedback）。双类选择器把特异性抬到 :hover 之上，
+ * 且只改背景 —— 按住时按钮排布不能跳一下。
+ */
+.pui-pho__act.pui-pho__act--ping,
+.pui-pho__vmore.pui-pho__vmore--ping {
+  background: rgba(0, 122, 255, 0.24);
+}
+
+.pui-pho__actunit.pui-pho__actunit--ping {
+  background: rgba(0, 122, 255, 0.18);
+}
+
+/*
+ * 只给读屏的计数。
+ * 视觉上"第几张"已经由缩略图条的高亮表达，再写一遍 "1 / 4" 只是噪音；
+ * 但读屏用户拿不到那个高亮，需要一句话说清位置。
+ */
+.pui-pho__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pui-pho__vempty {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--pui-label-2);
+  font-size: var(--pui-font-footnote);
+}
+
+.pui-pho__vempty-btn {
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--pui-blue);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ── 底部 tab ──────────────────────────────────────── */
+
+.pui-pho__tabbar {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 6px 2px calc(var(--pui-homebar-h) + 1px);
+  background: #f9f9f9;
+}
+
+.pui-pho__tab {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pui-label-2);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-pho__tab svg {
+  width: 25px;
+  height: 25px;
+}
+
+.pui-pho__tab i {
+  font-style: normal;
+  font-size: var(--pui-font-caption2);
+  letter-spacing: var(--pui-tracking-caption);
+}
+
+.pui-pho__tab--on {
+  color: var(--pui-blue);
+}
+
+/* ── 进出过渡：与电话/信息同一套方向语义 ───────────── */
+.pui-pho-screen-push-enter-from {
+  transform: translateX(100%);
+}
+
+.pui-pho-screen-push-leave-to {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-pho-screen-pop-enter-from {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-pho-screen-pop-leave-to {
+  transform: translateX(100%);
+}
+
+.pui-pho-screen-push-enter-active,
+.pui-pho-screen-push-leave-active,
+.pui-pho-screen-pop-enter-active,
+.pui-pho-screen-pop-leave-active {
+  transition:
+    transform var(--pui-dur-base) var(--pui-ease-out),
+    opacity var(--pui-dur-base) var(--pui-ease-out);
+  will-change: transform;
+}

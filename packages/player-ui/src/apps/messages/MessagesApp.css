@@ -1,0 +1,765 @@
+.pui-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--pui-bg);
+  overflow: hidden;
+}
+
+.pui-msg__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* ══ 列表标题区：单行三段（编辑 / 标题 / 筛选） ══ */
+.pui-msg__masthead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: calc(var(--pui-statusbar-h) + 4px) var(--pui-space-3) 2px;
+  background: #fff;
+}
+
+/* 两侧工具按钮等宽，标题才能真正落在屏幕中线上 */
+.pui-msg__tool {
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pui-blue);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    opacity var(--pui-dur-fast) linear;
+}
+
+.pui-msg__tool svg {
+  width: 21px;
+  height: 21px;
+}
+
+.pui-msg__tool:active {
+  opacity: 0.5;
+  transform: scale(0.9);
+}
+
+/* 裸图标按钮点按只变淡，不铺蓝色底块。双类选择器压过 :active，
+   鼠标停在按钮上点也看得见反馈（电话那边被 hover 压掉过一次）。 */
+.pui-msg__tool.pui-msg__tool--ping {
+  opacity: 0.45;
+}
+
+/* 小标题居中，同时是"回桌面"入口 —— 大标题降级后顶部只剩它可点 */
+.pui-msg__mast-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-semibold);
+  letter-spacing: var(--pui-tracking-body);
+  color: var(--pui-label);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-msg__mast-title:active {
+  opacity: 0.5;
+}
+
+/* 搜索栏：圆角灰底 + 放大镜 + 真输入框 + 右端麦克风。
+   静止态与改前的纯外观版一模一样：input 透明无边框、字号/行高/颜色全部继承容器，
+   只有打字时才出现清除按钮 —— 不做"点一下另开搜索页"那套假入口。 */
+.pui-msg__search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px var(--pui-space-4) 10px;
+  padding: 7px 12px;
+  border-radius: 16px;
+  background: var(--pui-fill);
+  color: var(--pui-label-2);
+  font-size: var(--pui-font-subhead);
+  user-select: none;
+}
+
+.pui-msg__search-glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--pui-label-3);
+}
+
+.pui-msg__search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 0;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  /* 静止态沿用改前提示词的灰字；聚焦或有内容后才转成正文黑，输入看得清 */
+  color: var(--pui-label-2);
+  font: inherit;
+  line-height: inherit;
+  user-select: text;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pui-msg__search-input:focus,
+.pui-msg__search-input:not(:placeholder-shown) {
+  color: var(--pui-label);
+}
+
+.pui-msg__search-input::placeholder {
+  color: var(--pui-label-2);
+  opacity: 1;
+}
+
+/* reset.css 给所有 :focus-visible 套了 2px 蓝环（键盘无障碍用）。
+   手机里的输入框聚焦只有光标，不该冒出一圈方蓝框；用 0,2,0 压过全局的 0,1,0。
+   其它按钮的键盘焦点环保留不动。 */
+.pui-msg__search-input:focus-visible,
+.pui-msg__composer-input:focus-visible {
+  outline: none;
+}
+
+/* Chrome 自带的搜索清除叉会和我们自己的清除按钮重影 */
+.pui-msg__search-input::-webkit-search-cancel-button,
+.pui-msg__search-input::-webkit-search-decoration {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.pui-msg__search-clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pui-label-3);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--pui-dur-fast) var(--pui-ease-out);
+}
+
+.pui-msg__search-clear svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pui-msg__search-clear:active {
+  transform: scale(0.86);
+}
+
+.pui-msg__search-mic {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--pui-label-3);
+}
+
+/* ══ 会话列表 ══ */
+.pui-msg__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pui-msg__cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px var(--pui-space-4);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-msg__cell:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.pui-msg__cell-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pui-msg__cell-name {
+  font-size: var(--pui-font-body);
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-msg__cell-preview {
+  font-size: var(--pui-font-footnote);
+  color: var(--pui-label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-msg__cell-meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding-top: 2px;
+}
+
+.pui-msg__cell-time {
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-msg__chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--pui-label-3);
+}
+
+/* ══ 详情顶栏（悬浮） ══
+ *
+ * 高度必须写成一个变量：chatbar 和滚动区的占位块同时用它。
+ * 两处一旦不一致，要么首条消息被顶栏压住，要么顶部凭空多一条空白。
+ * 46px 头像 + 30px 名字胶囊 − 6px 交叠 + 上下内边距 6px = 状态栏 + 82px。
+ */
+.pui-msg__screen--thread {
+  --pui-msg-chatbar-h: calc(var(--pui-statusbar-h) + 82px);
+}
+
+/*
+ * 顶栏**不留分隔线**（box-shadow / border-bottom 都不要）。
+ * 真机这块是压在壁纸上的模糊层，边界靠材质差本身表达；我们不复刻壁纸，
+ * 底下就是纯白，画一条 0.5px 的线会变成一条凭空出现的横线。
+ * 滚动时消息从模糊层背后穿过，那时才看得见材质。
+ */
+.pui-msg__chatbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  /* 盖在滚动内容之上，消息才会从它背后虚化穿过 */
+  z-index: var(--pui-z-navbar);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: var(--pui-msg-chatbar-h);
+  padding: calc(var(--pui-statusbar-h) + 6px) var(--pui-space-3) 6px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* 返回：胶囊而不是裸箭头。真机胶囊里还装着未读数，作品不渲染未读，收窄成一颗小药丸。
+ * 绝对定位让它的上沿与头像上沿齐平 —— 三者（返回 / 头像 / 通话）各自独立定位，
+ * 谁也不用给谁让位，改一个尺寸不会把另两个挤歪。 */
+.pui-msg__back {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 6px);
+  left: var(--pui-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0.5px 3px rgba(0, 0, 0, 0.14);
+  color: var(--pui-blue);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-msg__back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pui-msg__back:active {
+  opacity: 0.55;
+}
+
+/* 身份区：绝对定位到中线，这样左右两侧按钮宽度不同也不会把名字挤偏。
+ * 能点开联系人时它是 button：清掉按钮默认外观，视觉与旧的 div 完全一致。 */
+.pui-msg__peer {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 6px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 62%;
+  transform: translateX(-50%);
+}
+
+button.pui-msg__peer {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.pui-msg__peer:active {
+  opacity: 0.75;
+}
+
+/* 名字胶囊压住头像下沿 6px，两层视觉上是一个整体 */
+.pui-msg__peer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  margin-top: -6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.16);
+}
+
+.pui-msg__peer-name {
+  font-size: var(--pui-font-headline);
+  font-weight: var(--pui-weight-semibold);
+  line-height: 1.3;
+  color: var(--pui-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pui-msg__peer-chevron {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--pui-label-3);
+}
+
+/* 自定义发信人（不是人物）：没有头像可挂、也没有联系人可跳，
+ * 顶栏只留一行居中的加粗名字。行高 28px 与返回键同高、上沿也相同，
+ * 所以「返回 / 名字 / 视频」三者垂直同心，不会一人高一人低。 */
+.pui-msg__peer-title {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 6px);
+  left: 50%;
+  max-width: 62%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  color: var(--pui-label);
+  font-size: var(--pui-font-title3);
+  font-weight: var(--pui-weight-bold);
+  line-height: 28px;
+}
+
+.pui-msg__call {
+  position: absolute;
+  top: calc(var(--pui-statusbar-h) + 1px);
+  right: var(--pui-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pui-label-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    opacity var(--pui-dur-fast) linear;
+}
+
+.pui-msg__call svg {
+  width: 26px;
+  height: 26px;
+}
+
+.pui-msg__call:active {
+  transform: scale(0.9);
+  opacity: 0.6;
+}
+
+.pui-msg__call.pui-msg__call--ping {
+  opacity: 0.45;
+}
+
+/* 给悬浮顶栏让位。它随内容一起滚走，滚过之后消息才穿到顶栏背后 */
+.pui-msg__thread-spacer {
+  flex: none;
+  height: calc(var(--pui-msg-chatbar-h) + 8px);
+}
+
+.pui-msg__screen--thread .pui-scroll__viewport {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.pui-msg__screen--thread .pui-scroll__viewport > * {
+  flex: 0 0 auto;
+}
+
+/* ══ 气泡区 ══ */
+.pui-msg__divider {
+  margin: var(--pui-space-3) 0 var(--pui-space-2);
+  text-align: center;
+  font-size: var(--pui-font-caption1);
+  color: var(--pui-label-3);
+}
+
+/* 系统消息：没有气泡、没有头像、没有时刻，只是居中一行灰字 */
+.pui-msg__system {
+  margin: 9px 26px;
+  text-align: center;
+  font-size: var(--pui-font-caption1);
+  line-height: 1.45;
+  color: var(--pui-label-3);
+  overflow-wrap: anywhere;
+}
+
+/* 居中时间：只在对话中断超过 10 分钟时出现，不是每条都打 */
+.pui-msg__timegap {
+  margin: 10px 0 6px;
+  text-align: center;
+  font-size: 0.625rem;
+  font-weight: var(--pui-weight-semibold);
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pui-msg__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 1.5px var(--pui-space-3);
+}
+
+.pui-msg__row[data-side='right'] {
+  flex-direction: row-reverse;
+}
+
+.pui-msg__avatar-slot {
+  flex: 0 0 28px;
+  width: 28px;
+}
+
+.pui-msg__bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 74%;
+}
+
+.pui-msg__row[data-side='right'] .pui-msg__bubble-wrap {
+  align-items: flex-end;
+}
+
+.pui-msg__author {
+  margin: 0 0 2px 11px;
+  font-size: 0.625rem;
+  color: var(--pui-label-3);
+}
+
+.pui-msg__bubble {
+  padding: 7px 12px;
+  /* 真机是两端同半径的胶囊，没有尾巴；对方灰、我方蓝 */
+  border-radius: 17px;
+  background: #e9e9eb;
+  color: #000;
+  font-size: var(--pui-font-subhead);
+  line-height: 1.4;
+  letter-spacing: var(--pui-tracking-body);
+  overflow-wrap: anywhere;
+}
+
+.pui-msg__row[data-side='right'] .pui-msg__bubble {
+  /* 比 #007aff 亮一档：真机 iMessage 的蓝是这个值，对着白底看更接近 */
+  background: #0a84ff;
+  color: #fff;
+}
+
+/* ── 图片消息 ──
+   真机图片消息没有气泡底色：图本身就是气泡（圆角在图身上），
+   所以这里把气泡的 padding / 背景 / 蓝灰都去掉。
+
+   我方那条必须**再写一遍**：上面 `.pui-msg__row[data-side='right'] .pui-msg__bubble`
+   是 3 个选择器，比这里的 2 个更"重"，它会把 #0a84ff 重新盖回来。
+   结果就是图片四角露出一圈蓝色月牙（气泡 17px 圆角 − 图片 14px 圆角），
+   远看像给照片描了蓝边、圆角也像变尖了 —— 这正是「图片圆角怎么这样」的来历。
+   后面那条 4 个选择器，才压得住。 */
+.pui-msg__bubble[data-type='image'],
+.pui-msg__row[data-side='right'] .pui-msg__bubble[data-type='image'] {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+}
+
+.pui-msg__image-hint {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 17px;
+  background: #e9e9eb;
+  color: #000;
+}
+
+.pui-msg__row[data-side='right'] .pui-msg__image-hint {
+  background: #0a84ff;
+  color: #fff;
+}
+
+/* ── 图片消息：多图封进**一个**圆角矩形 ──
+   圆角与裁角都在外框上，里面格子一律直角、靠 1px 缝隙分开；
+   形状交给格子（aspect-ratio + overflow），图片只负责 cover 填满，
+   所以任何原始比例都不会把图集撑歪。2 / 4 张两列，其余三列。 */
+.pui-msg__images {
+  display: grid;
+  gap: 1px;
+  width: 232px;
+  max-width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pui-msg__images[data-cols='2'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.pui-msg__images[data-cols='3'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pui-msg__tile {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  /* 格子自己不带圆角：圆角属于整块图集 */
+  border-radius: 0;
+  background: #e9e9eb;
+  /* 它是个 button（可点开查看器），显式清掉内边距与边框，免得依赖全局 reset 的细节 */
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pui-msg__tile:active .pui-msg__image {
+  opacity: 0.82;
+}
+
+.pui-msg__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 跟随格子：多图时是 0（拼成一块），单图时是 14px */
+  border-radius: inherit;
+}
+
+/* 单图保持原始比例，只限宽高（不套正方形，竖图被裁掉半截就毁了） */
+.pui-msg__images[data-count='1'] {
+  display: block;
+  width: auto;
+  /* 只有一张时圆角长在图上，外框不用再裁 */
+  border-radius: 0;
+  overflow: visible;
+}
+
+.pui-msg__images[data-count='1'] .pui-msg__tile {
+  width: fit-content;
+  aspect-ratio: auto;
+  border-radius: 14px;
+  background: transparent;
+}
+
+.pui-msg__images[data-count='1'] .pui-msg__image {
+  width: auto;
+  height: auto;
+  max-width: 210px;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+/* 已读回执：贴在我方最后一条消息下方，右对齐，比时间戳还要轻 */
+.pui-msg__read {
+  margin: -1px var(--pui-space-4) 3px 0;
+  text-align: right;
+  font-size: 0.6875rem;
+  color: var(--pui-label-3);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* ══ 底部输入条：能聚焦能打字，但不写回作品、不发送 ══ */
+.pui-msg__composer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 10px calc(var(--pui-homebar-h) + 6px);
+  color: var(--pui-label-3);
+}
+
+.pui-msg__composer-plus {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pui-fill);
+  color: var(--pui-label-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--pui-dur-fast) var(--pui-ease-out),
+    opacity var(--pui-dur-fast) linear;
+}
+
+.pui-msg__composer-plus svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pui-msg__composer-plus:active {
+  transform: scale(0.9);
+}
+
+.pui-msg__composer-plus.pui-msg__composer-plus--ping {
+  opacity: 0.45;
+}
+
+/* 填色胶囊，没有描边 —— 麦克风长在它内部右端，不是旁边一个独立按钮 */
+.pui-msg__composer-field {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 10px 6px 14px;
+  border-radius: 19px;
+  background: var(--pui-fill);
+  font-size: var(--pui-font-subhead);
+  color: var(--pui-label-3);
+  user-select: none;
+}
+
+/* 与改前的提示词 span 同宽同高同色；只有聚焦/打字后文字才转成正文黑 */
+.pui-msg__composer-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 0;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: var(--pui-label-3);
+  font: inherit;
+  line-height: inherit;
+  user-select: text;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pui-msg__composer-input:focus,
+.pui-msg__composer-input:not(:placeholder-shown) {
+  color: var(--pui-label);
+}
+
+.pui-msg__composer-input::placeholder {
+  color: var(--pui-label-3);
+  opacity: 1;
+}
+
+.pui-msg__composer-mic {
+  flex: none;
+  width: 21px;
+  height: 21px;
+}
+
+/* 系统开了「减少动态效果」就只留透明度反馈，去掉缩放 */
+@media (prefers-reduced-motion: reduce) {
+  .pui-msg__tool:active,
+  .pui-msg__call:active,
+  .pui-msg__composer-plus:active,
+  .pui-msg__search-clear:active {
+    transform: none;
+  }
+}
+
+/* ── 屏幕切换：进/出方向必须对称 ── */
+.pui-screen-push-enter-from {
+  transform: translateX(100%);
+}
+
+.pui-screen-push-leave-to {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-screen-pop-enter-from {
+  transform: translateX(-22%);
+  opacity: 0.6;
+}
+
+.pui-screen-pop-leave-to {
+  transform: translateX(100%);
+}
+
+.pui-screen-push-enter-active,
+.pui-screen-push-leave-active,
+.pui-screen-pop-enter-active,
+.pui-screen-pop-leave-active {
+  transition:
+    transform 260ms var(--pui-ease-out),
+    opacity 260ms var(--pui-ease-out);
+  will-change: transform;
+}
+
+/* ── 图片详情查看器：全屏白底（iOS 照片 / 信息风格，区别于 KakaoTalk 黑底） ── */

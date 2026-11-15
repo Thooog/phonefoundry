@@ -1,0 +1,54 @@
+/* 作品端 reset —— 只作用于手机屏幕内部，不影响宿主页面 */
+
+:where(.pui-root) *,
+:where(.pui-root) *::before,
+:where(.pui-root) *::after {
+  box-sizing: border-box;
+}
+
+:where(.pui-root) {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+:where(.pui-root) h1,
+:where(.pui-root) h2,
+:where(.pui-root) h3,
+:where(.pui-root) h4,
+:where(.pui-root) p {
+  margin: 0;
+  font-weight: inherit;
+}
+
+:where(.pui-root) button {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:where(.pui-root) ul,
+:where(.pui-root) ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:where(.pui-root) img {
+  display: block;
+  max-width: 100%;
+}
+
+:where(.pui-root) :focus-visible {
+  outline: 2px solid #007aff;
+  outline-offset: 2px;
+}
