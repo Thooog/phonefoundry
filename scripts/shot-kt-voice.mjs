@@ -220,7 +220,7 @@ try {
   await waitFor(session, `Boolean(document.querySelector('[data-testid="home-screen"]'))`, '桌面')
   await evalJs(session, `document.querySelector('[data-testid="home-dock-kakaotalk"]').click()`)
   await waitFor(session, `Boolean(document.querySelector('[data-testid="kt-list-screen"]'))`, '列表')
-  // 默认停在 Friends tab，会话条目在 Chats tab 里
+  // 首页默认停在 Chats tab；这里再点一次是幂等的，留着兼容旧行为
   await evalJs(session, `document.querySelector('[data-testid="kt-tab-chats"]').click()`)
   await waitFor(
     session,

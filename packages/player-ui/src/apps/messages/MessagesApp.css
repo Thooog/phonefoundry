@@ -265,6 +265,10 @@
  * 真机这块是压在壁纸上的模糊层，边界靠材质差本身表达；我们不复刻壁纸，
  * 底下就是纯白，画一条 0.5px 的线会变成一条凭空出现的横线。
  * 滚动时消息从模糊层背后穿过，那时才看得见材质。
+ *
+ * 底色因此不常驻：消息还没滚上来时它背后是纯白，一层 74% 白 + 模糊只能
+ * 换来一块边界可见的白板（看着像凭空多出来的一条）。底色改由子层承担，
+ * 由 MessagesApp.vue 的 barLifted 决定淡入淡出 —— 只有真要遮住内容时才显形。
  */
 .pui-msg__chatbar {
   position: absolute;
@@ -279,9 +283,25 @@
   height: var(--pui-msg-chatbar-h);
   padding: calc(var(--pui-statusbar-h) + 6px) var(--pui-space-3) 6px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.74);
+  background: none;
+}
+
+/* 底边 8px 渐隐：胶囊下沿离这条边只有 6px，硬边会把胶囊"切"一刀 */
+.pui-msg__chatbar-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 8px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 8px), transparent 100%);
+  opacity: 0;
+  transition: opacity var(--pui-dur-fast) linear;
+  pointer-events: none;
+}
+
+.pui-msg__chatbar--lifted .pui-msg__chatbar-bg {
+  opacity: 1;
 }
 
 /* 返回：胶囊而不是裸箭头。真机胶囊里还装着未读数，作品不渲染未读，收窄成一颗小药丸。
@@ -423,16 +443,24 @@ button.pui-msg__peer:active {
   opacity: 0.45;
 }
 
-/* 给悬浮顶栏让位。它随内容一起滚走，滚过之后消息才穿到顶栏背后 */
+/*
+ * 给悬浮顶栏让位。它随内容一起滚走，滚过之后消息才穿到顶栏背后。
+ *
+ * 「内容不足一屏时贴底」交给 margin-top:auto：它会吸走全部多余空白，
+ * 效果与容器 justify-content:flex-end 一致；而内容超出一屏时 auto 退化为 0，
+ * 布局回到正常自上而下。反过来用 flex-end 就会出事：溢出被挤到容器**上方**，
+ * scrollHeight 不含它，既滚不到也滚不回来 —— 首条消息被顶到悬浮顶栏背后，
+ * 顶栏因此误判「下面压着内容」，常驻一层白底，看着就是凭空多出来的一块。
+ */
 .pui-msg__thread-spacer {
   flex: none;
   height: calc(var(--pui-msg-chatbar-h) + 8px);
+  margin-top: auto;
 }
 
 .pui-msg__screen--thread .pui-scroll__viewport {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
 }
 
 .pui-msg__screen--thread .pui-scroll__viewport > * {

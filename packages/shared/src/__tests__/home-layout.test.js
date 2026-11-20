@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject, toWorkData } from '../index.js'
-import { findHomeSpace, fitsHomeHtml, HOME_COLUMNS, HOME_HTML_LIMIT, HOME_ROWS, HOME_WIDGET_SIZES, homeItemCells, moveHomeItem, resolveHomeLayout } from '../work/home-layout.js'
+import { findHomeSpace, fitsHomeHtml, HOME_COLUMNS, HOME_HTML_LIMIT, HOME_ROWS, HOME_WIDGET_SIZES, homeItemCells, moveHomeItem, resolveHomeLayout, summarizeHomeLayoutLoss } from '../work/home-layout.js'
 
 const widget = { id: 'widget_date', kind: 'preset', presetId: 'date', area: 'grid', slot: 4 }
 const icon = { id: 'custom_app', kind: 'html-app', name: '自定义应用', html: '<b>Logo</b>' }
@@ -16,8 +16,10 @@ describe('home layout', () => {
   })
 
   it('fits every supported rectangle and reserves room for built-in apps', () => {
-    expect(HOME_WIDGET_SIZES).toHaveLength(27)
+    expect(HOME_WIDGET_SIZES).toHaveLength(16)
     for (const { value, columns, rows } of HOME_WIDGET_SIZES) {
+      expect(columns).toBeLessThanOrEqual(4)
+      expect(rows).toBeLessThanOrEqual(4)
       const slot = (HOME_ROWS - rows) * HOME_COLUMNS + HOME_COLUMNS - columns
       const item = { kind: 'html-widget', area: 'grid', slot, size: value }
       expect(homeItemCells(item)).toHaveLength(columns * rows)
@@ -27,18 +29,46 @@ describe('home layout', () => {
     expect(homeItemCells({ kind: 'html-widget', size: '4x7', area: 'grid', slot: 0 })).toEqual([])
   })
 
+  it('clamps an out-of-range size instead of throwing the source away', () => {
+    const project = createProject()
+    const apps = resolveHomeLayout(project).items
+    project.workSettings.homeLayout = { items: [...apps,
+      { ...icon, kind: 'html-widget', size: '4x6', area: 'grid', slot: 4 },
+      { ...icon, id: 'tall', kind: 'html-widget', size: '1x5', area: 'grid', slot: 0 },
+    ] }
+    const { items } = resolveHomeLayout(toWorkData(project))
+    // 4x6 / 1x5 都压到 4 行上限，源码与名字都留着
+    expect(items.find(item => item.id === icon.id)).toMatchObject({ size: '4x4', html: icon.html, name: icon.name })
+    // 1x5 压成 1x4 后与第一格的应用重叠，只能丢掉 —— 这是格位冲突，不是尺寸问题
+    expect(items.some(item => item.id === 'tall')).toBe(false)
+    expect(summarizeHomeLayoutLoss({ items: [...apps, { ...icon, kind: 'html-widget', size: '4x6', area: 'grid', slot: 4 }] })).toBeNull()
+  })
+
+  it('reports entries that a normalize pass would silently drop', () => {
+    const project = createProject()
+    const apps = resolveHomeLayout(project).items
+    const huge = { ...icon, id: 'home_huge', kind: 'html-widget', size: '2x2', area: 'grid', slot: 20, html: 'x'.repeat(HOME_HTML_LIMIT + 1) }
+    const nameless = { ...icon, id: 'home_noname', kind: 'html-app', area: 'grid', slot: 24, name: '   ' }
+    const overlapping = { ...icon, id: 'home_dup', kind: 'html-app', area: 'grid', slot: 0 }
+    expect(summarizeHomeLayoutLoss({ items: [huge, nameless] })).toEqual({ oversized: 1, invalid: 1 })
+    // 后一个压在同一个格位上 —— 位置冲突，同样只能丢
+    expect(summarizeHomeLayoutLoss({ items: [overlapping, { ...overlapping, id: 'home_dup2' }] })).toEqual({ oversized: 0, invalid: 1 })
+    expect(summarizeHomeLayoutLoss({ items: [...apps] })).toBeNull()
+    expect(summarizeHomeLayoutLoss({})).toBeNull()
+  })
+
   it('preserves a custom size through work data and places a resize at the original anchor when possible', () => {
     const project = createProject()
     const apps = resolveHomeLayout(project).items
     const original = { ...icon, kind: 'html-widget', area: 'grid', slot: 5 }
     expect(homeItemCells(original)).toEqual([5, 6, 9, 10])
-    const resized = { ...original, size: '4x6' }
+    const resized = { ...original, size: '4x4' }
     expect(findHomeSpace(apps, original, original)).toEqual({ area: 'grid', slot: 5 })
     expect(findHomeSpace(apps, resized, original)).toEqual({ area: 'grid', slot: 4 })
     project.workSettings.homeLayout = { items: [...apps, { ...resized, slot: 4 }] }
     const work = toWorkData(project)
-    expect(work.workSettings.homeLayout.items.at(-1)).toMatchObject({ size: '4x6', slot: 4 })
-    expect(moveHomeItem(resolveHomeLayout(work).items, icon.id, 'grid', 5).error).toContain('4 × 6')
+    expect(work.workSettings.homeLayout.items.at(-1)).toMatchObject({ size: '4x4', slot: 4 })
+    expect(moveHomeItem(resolveHomeLayout(work).items, icon.id, 'grid', 5).error).toContain('4 × 4')
   })
 
   it('keeps the legacy layout optional and supports swapping across the Dock', () => {

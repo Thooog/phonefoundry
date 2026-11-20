@@ -148,6 +148,10 @@ function stripEditorFields(value) {
     const out = {}
     for (const [k, v] of Object.entries(value)) {
       if (EDITOR_ONLY_KEYS.has(k)) continue
+      // 值为 undefined 的键直接丢掉：undefined 不是 JSON 值，留着会让下游
+      // assertPlain() 判死整份数据（旧版本复制/导入项目给每条回复补过
+      // `mediaAssetIds: undefined`）。JSON.stringify 本来也会丢它，这里只是提前做。
+      if (v === undefined) continue
       out[k] = stripEditorFields(v)
     }
     return out

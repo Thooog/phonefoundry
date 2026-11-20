@@ -21,6 +21,15 @@ import { useTapFeedback } from '../../kernel/use-tap-feedback.js'
 const runtime = usePhoneRuntime()
 const { getWork, resolveAsset } = useWorkData()
 
+/**
+ * 首屏停在哪个 tab。默认 Chats —— 打开 KakaoTalk 看到的就是聊天列表。
+ * 只有 SSR 渲染测试会把它拨到 friends：组件内部状态在 renderToString 里点不了，
+ * 好友列表那条用例又必须真的渲染好友页才有意义。运行时（手机外壳）不传任何 props。
+ */
+const props = defineProps({
+  initialTab: { type: String, default: 'chats' },
+})
+
 /** 消息图片：把 assetId 解析成可直接放进 <img> 的地址；取不到返回空串 */
 function resolveSrc(assetId) {
   if (!assetId) return ''
@@ -69,6 +78,28 @@ function voiceWidth(sec) {
   return Math.min(116 + n * 2.6, 208)
 }
 
+/*
+ * 波形是「等宽竖条」，柱宽与柱间距**不随语音长短变**。
+ *
+ * 以前柱子是 flex:1 平分剩余宽度：3 秒的语音柱宽 4px、1 分钟的柱宽 7px，
+ * 同一个控件在两条气泡里粗细、疏密都不一样，看着像两种东西。
+ * 长短只该决定柱子**有几根** —— 和真机一致：竖条本身是固定的。
+ */
+const VOICE_BAR_WIDTH = 3
+const VOICE_BAR_GAP = 2
+/**
+ * 波形之外的开销：播放圆钮 22px + 左右两个 8px 间距 + 时长文字。
+ * 文字取最长的那种（「10:00」约 32px），宁可短语音右端空两三像素，
+ * 也别按窄文字算 —— 算多了最后几根柱子会被 overflow:hidden 切掉半根。
+ */
+const VOICE_CHROME_WIDTH = 22 + 8 + 8 + 32
+
+function voiceBarCount(sec) {
+  const available = voiceWidth(sec) - VOICE_CHROME_WIDTH
+  // 先按「n 根柱 + (n-1) 个间距」反解，再用 max 兜住极短语音不至于只剩一根
+  return Math.max(6, Math.floor((available + VOICE_BAR_GAP) / (VOICE_BAR_WIDTH + VOICE_BAR_GAP)))
+}
+
 /**
  * 波形柱高序列（0~1）。
  *
@@ -81,11 +112,11 @@ const WAVE = [
   0.66, 0.48,
 ]
 
-function waveOf(item) {
+function waveOf(item, count) {
   const seed = String(item?.id ?? '')
     .split('')
     .reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
-  return WAVE.map((_, i) => WAVE[(i + seed) % WAVE.length])
+  return Array.from({ length: count }, (_, i) => WAVE[(i + seed) % WAVE.length])
 }
 
 /* ── 通话消息 ──
@@ -209,7 +240,7 @@ const owner = computed(() => {
   return identity ? { ...c, name: identity.name, avatarAssetId: identity.avatarAssetId } : c
 })
 
-const activeTab = ref('friends')
+const activeTab = ref(props.initialTab === 'friends' ? 'friends' : 'chats')
 
 const { pinged, pingDown, pingUp, ping } = useTapFeedback()
 
@@ -1154,7 +1185,7 @@ function isGroupEnd(item, index) {
                         <svg viewBox="0 0 24 24"><path d="M8.2 5.4l10 6.6-10 6.6z" fill="currentColor" /></svg>
                       </span>
                       <span class="pui-kt__voice-wave" aria-hidden="true">
-                        <i v-for="(h, i) in waveOf(item)" :key="i" :style="{ height: `${h * 100}%` }" />
+                        <i v-for="(h, i) in waveOf(item, voiceBarCount(item.durationSec))" :key="i" :style="{ height: `${h * 100}%` }" />
                       </span>
                       <span class="pui-kt__voice-time" data-testid="kt-voice-time">
                         {{ durationText(item.durationSec) }}

@@ -1,6 +1,6 @@
 
 
-import { isBackupManifest, normalizeZipPath, readZip } from '@exporter'
+import { declaredUnzipBytes, isBackupManifest, normalizeZipPath, readZip } from '@exporter'
 import { assertProject } from '@phone-sim/shared'
 
 /** 导入来源。UI 用它在确认框里说"这是一份备份"还是"只是一份数据" */
@@ -11,6 +11,20 @@ export const IMPORT_KIND = Object.freeze({
 
 /** ZIP 本地文件头魔数 */
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04]
+
+/**
+ * 导入上限。
+ *
+ * 这三个数不是"产品限制"，而是内存保护：解析全程在内存里做
+ * （arrayBuffer → 解压 → Blob），一个选错的大文件就能让标签页 OOM，
+ * 连带把用户没保存的改动一起冲掉。所以宁可明确拒绝，也不要"试试看"。
+ *
+ * 备份包的主体是图片，正常作品到不了 256MB；解压后按"图片占大头、
+ * JSON 约占一两倍"给了 512MB 的余量。
+ */
+const MAX_FILE_BYTES = 256 * 1024 * 1024
+const MAX_UNZIP_BYTES = 512 * 1024 * 1024
+const MAX_JSON_BYTES = 64 * 1024 * 1024
 
 /**
  * @typedef {object} ParsedImport
@@ -34,6 +48,13 @@ export async function parseImportFile(file) {
   if (file.size === 0) {
     throw new Error('这个文件是空的。')
   }
+  // 先看体积再读内容：arrayBuffer() 会把整个文件拉进内存
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error(
+      `这个文件有 ${formatMb(file.size)}，超过了 ${formatMb(MAX_FILE_BYTES)} 的导入上限，` +
+        '读取它会让浏览器耗尽内存。如果这确实是你的备份，可以先在作品里删掉一些图片再重新导出。',
+    )
+  }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
   return looksLikeZip(bytes) ? parseBackupZip(bytes) : parseBareJson(bytes)
@@ -46,6 +67,15 @@ export async function parseImportFile(file) {
  * @returns {ParsedImport}
  */
 export function parseBackupZip(bytes) {
+  // 解压前先看中央目录声明的总大小：压缩炸弹靠的正是"几 MB 的包解出几 GB"
+  const declared = declaredUnzipBytes(bytes)
+  if (declared !== null && declared > MAX_UNZIP_BYTES) {
+    throw new Error(
+      `这个压缩包解压后会超过 ${formatMb(MAX_UNZIP_BYTES)}，已停止导入 —— ` +
+        '继续解开会让浏览器耗尽内存。如果这确实是你的备份，可以先在作品里删掉一些图片再重新导出。',
+    )
+  }
+
   const files = readZip(bytes)
 
   const projectPath = findProjectEntry(files)
@@ -80,6 +110,15 @@ export function parseBackupZip(bytes) {
 }
 
 export function parseBareJson(bytes) {
+  // 裸 JSON 不带图，正常只有几百 KB —— 几十 MB 的"项目数据"只会是坏文件或攻击载荷，
+  // 而 JSON.parse 一个几百 MB 的字符串同样能把标签页拖垮。
+  if (bytes.length > MAX_JSON_BYTES) {
+    throw new Error(
+      `这份 JSON 有 ${formatMb(bytes.length)}，超过了 ${formatMb(MAX_JSON_BYTES)} 的导入上限。` +
+        '如果是备份，请改用 .zip 备份包导入。',
+    )
+  }
+
   let data
   try {
     data = JSON.parse(new TextDecoder().decode(bytes))
@@ -124,6 +163,11 @@ export function parseBareJson(bytes) {
 function looksLikeZip(bytes) {
   if (bytes.length < 4) return false
   return ZIP_MAGIC.every((b, i) => bytes[i] === b)
+}
+
+/** 上限提示用。用户看不懂字节数，看得懂"312 MB" */
+function formatMb(bytes) {
+  return `${Math.round(bytes / (1024 * 1024))} MB`
 }
 
 /**

@@ -157,7 +157,8 @@ button.pui-home-board__tile { cursor: pointer; }
 .pui-home-board__tile--widget {
   display: block;
   justify-items: stretch;
-  border-radius: 20px;
+  /* 与预设同源的比例圆角：1 宽时收成 12px 左右（不再像胶囊），4 宽时封顶 20px */
+  border-radius: min(20px, 22%);
   overflow: hidden;
   background: #fff;
 }

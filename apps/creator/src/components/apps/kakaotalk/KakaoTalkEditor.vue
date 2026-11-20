@@ -25,7 +25,7 @@ import { useChatImport } from '../../../composables/use-chat-import.js'
  * 粘贴导入用的模板语法与「信息」完全一致（行尾时刻 + 未标注行 +20 秒），
  * 解析层在 editing/chat-import.js，两个聊天应用共用一份。
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppButton from '../../ui/AppButton.vue'
 import AppUploadButton from '../../ui/AppUploadButton.vue'
@@ -34,7 +34,8 @@ import { useUiStore } from '../../../stores/ui.js'
 import { useAssetUrls } from '../../../composables/use-asset-urls.js'
 import { prepareImage } from '../../../media/compress-image.js'
 import { orphanAssetIds } from '../../../editing/assets.js'
-import { fromDateTimeLocal, toDateTimeLocal } from '../../../utils/time.js'
+import { fromDateTimeLocal, formatTimeShift, toDateTimeLocal } from '../../../utils/time.js'
+import { scrollToEnd } from '../../../utils/scroll-to-end.js'
 import { parseConversationText, resolveImportTimes } from '../../../editing/chat-import.js'
 import { MESSAGE_DURATION_MAX, MESSAGE_MEDIA_MAX } from '../../../editing/messages.js'
 import {
@@ -50,6 +51,7 @@ import {
   countMessagesOf,
   deleteConversation,
   deleteMessage,
+  retimeMessage,
   threadOf,
   updateConversation,
   updateMessage,
@@ -302,6 +304,9 @@ function senderOptions(conv) {
 /**
  * 在某条消息的前/后插一条：新消息的 displayTime 贴着锚点时间 ±1 秒，
  * 物理位置则由数组顺序决定（见 editing/kakaotalk.js 的 addMessage）。
+ *
+ * 「在后面新增」是往对话末尾接一句，滚到最新一条；「在前面新增」那条落在对话中间，
+ * 贴底会把人甩出很远，所以只保证新条目露出来。
  */
 function createMessageRelative(conv, message, where) {
   if (readOnly.value) return
@@ -309,12 +314,27 @@ function createMessageRelative(conv, message, where) {
   const created = addMessage(editor, conv.id, payload)
   if (!created) return
   selectMessage(created.id)
+  if (where === 'after') { revealLatest(conv.id); return }
   requestAnimationFrame(() => {
     document.querySelector(`[data-msg-id="${created.id}"]`)?.scrollIntoView({
       block: 'nearest',
       behavior: 'smooth',
     })
   })
+}
+
+/** 把某个会话的时间线滚到最新一条 */
+function scrollToLatest(convId) {
+  scrollToEnd(document.querySelector(`[data-conv-id="${convId}"] .message-timeline`))
+}
+
+/**
+ * 等新节点进 DOM、高度定下来再滚 —— 只等一帧的话，消息里的图片还没撑开，
+ * scrollHeight 偏小，滚完会停在倒数第二条附近。
+ */
+async function revealLatest(convId) {
+  await nextTick()
+  requestAnimationFrame(() => requestAnimationFrame(() => scrollToLatest(convId)))
 }
 
 /**
@@ -333,10 +353,23 @@ function commitContent(message, event) {
   updateMessage(editor, message.id, { content: event.target.value })
 }
 
+/**
+ * 改发送时间：这条改到目标时刻，**它后面的消息一起平移同样的差值**。
+ *
+ * 只改一条会把整段对话的先后关系搅乱（后面的消息时间还停在原处，看起来像
+ * 时间倒流），所以按「修一条 = 整段往后/往前挪」处理，相对间隔保持不变。
+ */
 function commitTime(message, event) {
   const iso = fromDateTimeLocal(event.target.value)
   if (!iso) return
-  updateMessage(editor, message.id, { displayTime: iso })
+  const { deltaMs, shifted } = retimeMessage(editor, message.conversationId, message.id, iso)
+  if (shifted) ui.toast(`后面 ${shifted} 条消息也一起${deltaMs > 0 ? '往后' : '往前'}挪了 ${formatTimeShift(deltaMs)}`)
+}
+
+/** 新消息的时间默认取会话最后一条的时刻；空会话留空，由编辑层取当前时刻 */
+function composerTime(conv) {
+  const list = threadOf(project.value, conv.id)
+  return list.length ? toDateTimeLocal(list[list.length - 1].displayTime) : ''
 }
 
 async function removeMessage(message) {
@@ -501,7 +534,7 @@ async function commitType(message, event) {
   await reclaimAssets()
 }
 
-/** 语音时长。输入框给的是秒，编辑层负责取整并夹到 1~600；清空 = 未填（null） */
+/** 语音时长。输入框给的是秒，编辑层负责取整并夹到 1~600；清空 = 未填（null）。通话不夹上限，见 commitCallDuration 同一入口 */
 function commitDuration(message, event) {
   updateMessage(editor, message.id, { durationSec: event.target.value })
 }
@@ -569,8 +602,11 @@ function selectedMessages(conv) { return threadOf(project.value, conv.id).filter
 function selectMessage(id) { selectedMessageId.value = id; inspectorOpen.value = false }
 function openMessageProperties(id) { selectedMessageId.value = id; inspectorOpen.value = true }
 watchSelection(() => [selectedRecordId.value, threadOf(project.value, selectedRecordId.value).map(message => message.id)], ([, ids], previous) => { selectedMessageId.value = nextRecordSelection(ids, previous?.[1] ?? [], selectedMessageId.value) }, { immediate: false })
+/** 进会话就落在最近一条上：长对话不该每次都从第一句开始翻 */
+watchSelection(selectedRecordId, id => { if (id) revealLatest(id) }, { immediate: true })
 const { draftFor, submitting, submit } = useMessageDrafts(conversations, {
   readOnly: () => readOnly.value, select: selectMessage, error: message => ui.toast(message, { tone: 'error' }),
+  afterSubmit: (id, conv) => revealLatest(conv.id),
   forConversation: (conv, draft) => {
     const custom = senderOptions(conv).some(sender => sender.id === draft.sender && sender.kind === 'custom')
     /* 载体字段按目标类型各带各的：语音带时长+转写；通话带两个子维度，
@@ -683,7 +719,7 @@ const { draftFor, submitting, submit } = useMessageDrafts(conversations, {
 
                   <MessageTimeline v-else appearance="chat" :messages="threadOf(project,conv.id)" :selected="selectedMessageId" :sender="senderNameOf" :avatar="avatarUrlOf" :media="urlOf" :own="isOwnMessage" :show-read="false" :read-only="readOnly" test-prefix="kakao" @select="selectMessage" @edit="openMessageProperties" @before="createMessageRelative(conv,$event,'before')" @after="createMessageRelative(conv,$event,'after')" @remove="removeMessage" />
 
-                  <MessageComposer v-show="desktopInspector || !inspectorOpen" appearance="chat" :default-sender-id="conv.participantIds?.[0] || ''" :conversation="conv.title || titlePlaceholder(conv)" :draft="draftFor(conv.id)" :senders="senderOptions(conv)" :types="composerTypes" :disabled="readOnly || !senderOptions(conv).length" :busy="submitting" @submit="submit(conv)" />
+                  <MessageComposer v-show="desktopInspector || !inspectorOpen" appearance="chat" :default-sender-id="conv.participantIds?.[0] || ''" :conversation="conv.title || titlePlaceholder(conv)" :draft="draftFor(conv.id)" :default-time="composerTime(conv)" :senders="senderOptions(conv)" :types="composerTypes" :disabled="readOnly || !senderOptions(conv).length" :busy="submitting" @submit="submit(conv)" />
                 </div>
               </section><InspectorPanel v-model="inspectorOpen" title="消息属性">
                 <ol class="message-properties">
@@ -886,7 +922,6 @@ const { draftFor, submitting, submit } = useMessageDrafts(conversations, {
                           class="ktitem__voiceinput"
                           type="number"
                           min="1"
-                          :max="MESSAGE_DURATION_MAX"
                           step="1"
                           :value="message.callStatus === 'missed' ? '' : (message.durationSec ?? '')"
                           :disabled="readOnly || message.callStatus === 'missed'"

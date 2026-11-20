@@ -12,6 +12,8 @@ const props = defineProps({
   entering: { type: Boolean, default: false },
   editor: { type: Boolean, default: false },
   launchable: { type: Boolean, default: true },
+  // 创作端拿它把「正在编辑的草稿」临时摆上桌面；播放端不传，走项目里的布局
+  items: { type: Array, default: null },
 })
 const emit = defineEmits(['open'])
 const { pinged, pingDown, pingUp, ping } = useTapFeedback()
@@ -25,6 +27,7 @@ const workSettings = computed(() => props.work?.workSettings ?? {})
 const canOpen = computed(() => props.launchable && !props.editor)
 const visibleApps = computed(() => visibleHomeApps(props.work))
 const customLayout = computed(() => {
+  if (props.items) return { items: props.items }
   const layout = normalizeHomeLayout(workSettings.value.homeLayout)
   return layout ? resolveHomeLayout(props.work, layout) : null
 })

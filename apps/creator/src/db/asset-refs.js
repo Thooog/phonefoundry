@@ -19,33 +19,46 @@ export function rewriteAssetRefs(project, idMap) {
     return value
   }
 
+  /**
+   * 只在字段本来就有值时才写回。
+   *
+   * 直接 `obj[key] = swap(obj[key])` 对没有这个字段的记录（评论 / 回复就不带
+   * mediaAssetIds）会**凭空补一个 `undefined`**。`undefined` 不是 JSON 值，
+   * 一旦落进 WorkData，`assertPlain()` 会整份拒收 —— 表现为导出作品、导出备份
+   * 都报「xxx 类型为 undefined，无法安全序列化」。复制 / 导入项目都会走这里，
+   * 所以一条回复就能让副本永久导不出去。
+   */
+  const swapField = (obj, key) => {
+    if (!obj || typeof obj !== 'object') return
+    if (obj[key] === undefined) return
+    obj[key] = swap(obj[key])
+  }
+
   // 项目顶层
-  for (const c of project.characters ?? []) c.avatarAssetId = swap(c.avatarAssetId)
+  for (const c of project.characters ?? []) swapField(c, 'avatarAssetId')
   for (const a of project.platformAccounts ?? []) {
-    a.avatarAssetId = swap(a.avatarAssetId)
-    a.bannerAssetId = swap(a.bannerAssetId)
+    swapField(a, 'avatarAssetId')
+    swapField(a, 'bannerAssetId')
   }
 
   // 各应用数据桶
   for (const bucket of Object.values(project.appData ?? {})) {
-    for (const conv of bucket.conversations ?? []) conv.avatarAssetId = swap(conv.avatarAssetId)
-    for (const m of bucket.messages ?? []) m.mediaAssetIds = swap(m.mediaAssetIds)
-    for (const p of bucket.posts ?? []) p.mediaAssetIds = swap(p.mediaAssetIds)
+    for (const conv of bucket.conversations ?? []) swapField(conv, 'avatarAssetId')
+    for (const m of bucket.messages ?? []) swapField(m, 'mediaAssetIds')
+    for (const p of bucket.posts ?? []) swapField(p, 'mediaAssetIds')
     for (const list of [bucket.comments, bucket.replies]) {
-      for (const c of list ?? []) c.mediaAssetIds = swap(c.mediaAssetIds)
+      for (const c of list ?? []) swapField(c, 'mediaAssetIds')
     }
-    for (const ct of bucket.contacts ?? []) ct.avatarAssetId = swap(ct.avatarAssetId)
+    for (const ct of bucket.contacts ?? []) swapField(ct, 'avatarAssetId')
     // 照片：单图引用 + 相簿封面的 1~4 张
-    for (const ph of bucket.photos ?? []) ph.imageAssetId = swap(ph.imageAssetId)
-    for (const al of bucket.albums ?? []) al.coverImageAssetIds = swap(al.coverImageAssetIds)
+    for (const ph of bucket.photos ?? []) swapField(ph, 'imageAssetId')
+    for (const al of bucket.albums ?? []) swapField(al, 'coverImageAssetIds')
     // Instagram 故事：一条记录一帧
-    for (const st of bucket.stories ?? []) st.imageAssetId = swap(st.imageAssetId)
+    for (const st of bucket.stories ?? []) swapField(st, 'imageAssetId')
   }
 
   // 壁纸
-  if (project.workSettings?.wallpaper) {
-    project.workSettings.wallpaper.assetId = swap(project.workSettings.wallpaper.assetId)
-  }
+  if (project.workSettings?.wallpaper) swapField(project.workSettings.wallpaper, 'assetId')
 
   return project
 }

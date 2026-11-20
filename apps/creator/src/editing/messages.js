@@ -31,8 +31,8 @@ import { createChatOperations } from './chat-operations.js'
 import { createConversation, createMessage } from '@phone-sim/shared'
 
 const APP = 'messages'
-const { nearAnchor, ensureBucket, conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage } = createChatOperations(APP)
-export { conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage }
+const { nearAnchor, ensureBucket, conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage, retimeMessage } = createChatOperations(APP)
+export { conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage, retimeMessage }
 
 /** 标题上限。会话列表是单行，太长会被截断 */
 export const CONVERSATION_TITLE_MAX_LENGTH = 40
@@ -91,6 +91,20 @@ export function normalizeDuration(value) {
   const n = Number(value)
   if (!Number.isFinite(n)) return null
   return Math.min(Math.max(Math.round(n), 1), MESSAGE_DURATION_MAX)
+}
+
+/**
+ * 通话时长清洗。与语音共用 durationSec，但**不设上限**。
+ *
+ * 语音条的 600 秒来自「按住说一条」的物理上限；通话是另一回事 ——
+ * 打着电话聊两小时很正常，拿语音的上限去夹会把真实时长截成 10 分钟。
+ * 下限仍是 1 秒（0 秒的通话记录没有意义），非法值 → null（未填）。
+ */
+export function normalizeCallDuration(value) {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  if (!Number.isFinite(n)) return null
+  return Math.max(Math.round(n), 1)
 }
 
 /**

@@ -18,13 +18,13 @@ describe('workspace keyboard viewport recovery', () => {
     } }
     viewport = Object.assign(new EventTarget(), { height: 800, offsetTop: 0, scale: 1 })
     win = Object.assign(new EventTarget(), {
-      visualViewport: viewport, scrollX: 0, scrollY: 0,
+      visualViewport: viewport, innerHeight: 800, scrollX: 0, scrollY: 0,
       scrollTo: vi.fn(),
       requestAnimationFrame: fn => setTimeout(fn, 16),
       cancelAnimationFrame: clearTimeout,
       setTimeout, clearTimeout,
     })
-    doc = Object.assign(new EventTarget(), { documentElement: root, activeElement: null, querySelectorAll: () => [] })
+    doc = Object.assign(new EventTarget(), { documentElement: root, activeElement: null, visibilityState: 'visible', querySelectorAll: () => [] })
     vi.stubGlobal('window', win)
     vi.stubGlobal('document', doc)
     useScrollContainment()
@@ -83,6 +83,26 @@ describe('workspace keyboard viewport recovery', () => {
     emit(doc, 'focusin')
     vi.advanceTimersByTime(1000)
     expect(win.scrollTo).not.toHaveBeenCalled()
+  })
+  it('keeps the shell full height when the visual viewport stays short after the keyboard closes', () => {
+    viewport.height = 340
+    emit(viewport, 'resize')
+    expect(values.get('--creator-viewport-height')).toBe('340px')
+    // 键盘收起，但 WebKit 把高度停在 690（比布局视口少 110）就不再回调
+    viewport.height = 690
+    emit(viewport, 'resize')
+    expect(values.get('--creator-viewport-height')).toBe('800px')
+    expect(values.get('--creator-viewport-top')).toBe('0px')
+  })
+  it('ignores a hidden tab and re-samples the viewport once it is visible again', () => {
+    doc.visibilityState = 'hidden'
+    viewport.height = 690
+    values.clear()
+    emit(doc, 'visibilitychange')
+    expect(values.size).toBe(0)
+    doc.visibilityState = 'visible'
+    emit(doc, 'visibilitychange')
+    expect(values.get('--creator-viewport-height')).toBe('800px')
   })
   it('removes viewport listeners, timers and CSS properties on leaving the workspace', () => {
     emit(doc, 'focusout')

@@ -2535,7 +2535,9 @@ try {
         w: el.offsetWidth,
         time: el.querySelector('[data-testid="kt-voice-time"]')?.textContent.trim() ?? '',
         bars: el.querySelectorAll('.pui-kt__voice-wave i').length,
-        // 波形不能溢出被裁：柱数固定 18，宽度不够时最后几根会被 overflow:hidden 切掉，
+        // 柱宽固定：长短只改柱数，不改粗细
+        barW: el.querySelector('.pui-kt__voice-wave i')?.offsetWidth ?? 0,
+        // 波形不能溢出被裁：柱数随宽度算（柱宽固定 3px），算错就会切掉最后一根
 
         waveFit: (() => {
           const w = el.querySelector('.pui-kt__voice-wave')
@@ -2611,12 +2613,20 @@ try {
   const ownVoice = ktTypes.voices?.[2] ?? {}
 
   record(
-    " 语音条：播放三角 + 波形 + 时长三段齐全（三条语音都画出来了，18 根柱子没被裁）",
+    " 语音条：播放三角 + 波形 + 时长三段齐全（三条语音都画出来了，柱子没被裁）",
     ktTypes.voices?.length === 3 &&
       ktTypes.voices.every(
-        (v) => v.bars === 18 && v.playW > 0 && v.waveFit && /^\d+:\d{2}$/.test(v.time),
+        (v) => v.bars >= 6 && v.playW > 0 && v.waveFit && /^\d+:\d{2}$/.test(v.time),
       ),
     `${ktTypes.voices?.length} 条 · 波形 ${shortVoice.bars} 柱 · 三角 ${Math.round(shortVoice.playW)}px · 时长「${shortVoice.time}」· 不溢出 ${shortVoice.waveFit}`,
+  )
+
+  record(
+    " 波形固定：柱宽不随语音长短变，长短只改柱数（1:15 比 0:03 多）",
+    Math.abs(shortVoice.barW - 3) < 0.6 &&
+      Math.abs(longVoice.barW - shortVoice.barW) < 0.6 &&
+      longVoice.bars > shortVoice.bars,
+    `柱宽 ${shortVoice.barW.toFixed(1)}/${longVoice.barW.toFixed(1)}px · 柱数 ${shortVoice.bars}/${longVoice.bars}`,
   )
 
   record(

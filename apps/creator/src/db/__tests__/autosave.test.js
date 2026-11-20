@@ -208,6 +208,53 @@ describe('A-5 保存失败：内存态保留 + 明确报错 + 可重试', () => 
   })
 })
 
+describe('A-5b 快照失败必须报错，不能静默停在 saving', () => {
+  it('项目树里有不可克隆的内容（响应式代理）→ error，而不是永久 saving', async () => {
+    const state = { project: { id: 'prj_1', revision: 0, name: '初始' } }
+    const calls = []
+    const saver = createAutosaver({
+      persist: async (data) => { calls.push(data) },
+      readProject: () => state.project,
+      debounceMs: 1,
+    })
+    saver.reset(state.project)
+
+    // Vue 的 reactive 数组就是 Proxy：structuredClone 会抛 DataCloneError
+    state.project = {
+      ...state.project,
+      revision: 1,
+      name: '改过',
+      workSettings: { homeLayout: { items: [{ content: { schedules: new Proxy([], {}) } }] } },
+    }
+    saver.markDirty()
+
+    await expect(saver.flush()).rejects.toThrow(/无法存储/)
+
+    const st = saver.getState()
+    expect(st.status).toBe(SAVE_STATUS.ERROR)
+    expect(st.error).toBeTruthy()
+    // 一个字节都不该写下去
+    expect(calls.length).toBe(0)
+    // 内存态不回滚：用户的改动还在，可以另存
+    expect(state.project.name).toBe('改过')
+  })
+
+  it('没有内存态可写时也不会停在 saving', async () => {
+    const saver = createAutosaver({
+      persist: async () => {},
+      readProject: () => null,
+      debounceMs: 1,
+    })
+    saver.reset({ id: 'prj_1', revision: 0 })
+
+    saver.markDirty()
+    await saver.flush()
+
+    expect(saver.getState().status).toBe(SAVE_STATUS.SAVED)
+    expect(saver.getState().dirty).toBe(false)
+  })
+})
+
 // ───────────────────── A-11 保存期间再次修改 ─────────────────────
 
 describe('A-11 保存期间再次修改，不能误标 saved', () => {

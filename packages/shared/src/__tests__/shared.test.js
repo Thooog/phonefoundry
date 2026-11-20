@@ -20,6 +20,7 @@ import {
   parseStoryDate,
   formatClock,
   formatDayDivider,
+  formatDayDividerStamp,
   dayRelation,
   formatDuration,
   formatPhotoWeekdayTime,
@@ -101,6 +102,24 @@ describe('assertPlain', () => {
   it('类实例会被拒绝', () => {
     class Foo {}
     expect(() => assertPlain({ foo: new Foo() })).toThrow(/非纯对象/)
+  })
+})
+
+describe('toWorkData：值为 undefined 的键不进作品数据', () => {
+  it('评论/回复没有 mediaAssetIds 字段时不会带上 undefined（回归）', () => {
+    const project = createProject()
+    // 旧版本复制 / 导入项目会给每条回复补一个 `mediaAssetIds: undefined`，
+    // 这份数据以前能存进 IndexedDB，却导不出去 —— assertPlain 整份拒收
+    project.appData.x.replies = [{ ...createComment('post_1'), mediaAssetIds: undefined }]
+
+    const work = toWorkData(project)
+    const reply = work.appData.x.replies[0]
+
+    expect(Object.prototype.hasOwnProperty.call(reply, 'mediaAssetIds')).toBe(false)
+    expect(() => assertPlain(work)).not.toThrow()
+    // 其余字段一个都不能丢
+    expect(reply.content).toBe('')
+    expect(reply.parentId).toBe('post_1')
   })
 })
 
@@ -280,6 +299,23 @@ describe('storyDate 时间语义', () => {
     const storyDate = '2026-05-03'
     const old = new Date(2025, 11, 25)
     expect(formatDayDivider(old, storyDate)).toBe('2025年12月25日')
+  })
+})
+
+describe('formatDayDividerStamp：日期与时刻合成一句', () => {
+  const storyDate = '2026-05-03'
+
+  it('今天 / 昨天只给相对词（时刻由消息间的提示补）', () => {
+    expect(formatDayDividerStamp(new Date(2026, 4, 3, 9, 5), storyDate)).toBe('今天')
+    expect(formatDayDividerStamp(new Date(2026, 4, 2, 15, 17), storyDate)).toBe('昨天')
+  })
+
+  it('同年更早：月日 + 时刻，不写年份', () => {
+    expect(formatDayDividerStamp(new Date(2026, 3, 18, 15, 17), storyDate)).toBe('4月18日 15:17')
+  })
+
+  it('跨年：年份、月日与时刻都在同一行', () => {
+    expect(formatDayDividerStamp(new Date(2025, 11, 25, 8, 3), storyDate)).toBe('2025年12月25日 8:03')
   })
 })
 

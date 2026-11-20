@@ -15,19 +15,34 @@ describe('media viewer component wiring', () => {
     const runtime = createPhoneRuntime({ locked: false })
     runtime.openApp('kakaotalk')
     const ownerAccount = work.platformAccounts.find(a => a.platform === 'kakaotalk' && a.characterId === work.workSettings.ownerCharacterId)
-    const render = () => {
-      const app = createSSRApp(KakaoTalkApp)
+    const render = (props) => {
+      const app = createSSRApp(KakaoTalkApp, props)
       app.provide(PHONE_RUNTIME, runtime)
       app.provide('phoneWork', () => work)
       return renderToString(app)
     }
-    expect(await render()).not.toContain('data-testid="kt-friend-item"')
+    // 好友页只在 Friends tab 下渲染；首屏默认是 Chats，渲染测试得自己拨过去
+    const friends = () => render({ initialTab: 'friends' })
+    expect(await friends()).not.toContain('data-testid="kt-friend-item"')
     ownerAccount.extraFields.friendList = [work.characters[0].id, work.characters[1].id, work.characters[1].id, 'deleted']
-    expect((await render()).match(/data-testid="kt-friend-item"/g)).toHaveLength(1)
+    expect((await friends()).match(/data-testid="kt-friend-item"/g)).toHaveLength(1)
     ownerAccount.extraFields.friendList = []
-    expect(await render()).not.toContain('data-testid="kt-friend-item"')
+    expect(await friends()).not.toContain('data-testid="kt-friend-item"')
     work.workSettings.ownerCharacterId = null
-    expect(await render()).not.toContain('data-testid="kt-friend-item"')
+    expect(await friends()).not.toContain('data-testid="kt-friend-item"')
+  })
+
+  it('KakaoTalk opens on the Chats tab, not Friends', async () => {
+    const work = toWorkData(createSampleProject())
+    const runtime = createPhoneRuntime({ locked: false })
+    runtime.openApp('kakaotalk')
+    const app = createSSRApp(KakaoTalkApp)
+    app.provide(PHONE_RUNTIME, runtime)
+    app.provide('phoneWork', () => work)
+    const html = await renderToString(app)
+    // 会话列表在首屏，好友列表要手点 tab 才出现
+    expect(html).toContain('data-testid="kt-conversation-item"')
+    expect(html).not.toContain('data-testid="kt-friend-item"')
   })
   for (const [component, appId, prefix] of [[KakaoTalkApp, 'kakaotalk', 'kt'], [MessagesApp, 'messages', 'msg']]) {
     it(`${appId}: opens the sample app and its message thread without setup errors`, async () => {

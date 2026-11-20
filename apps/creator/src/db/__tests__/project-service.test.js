@@ -3,7 +3,16 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import * as service from '../project-service.js'
 import * as repo from '../repository.js'
-import { createProject, createCharacter, createAsset, createMessage, ID_PREFIX } from '@phone-sim/shared'
+import {
+  createProject,
+  createCharacter,
+  createAsset,
+  createMessage,
+  createComment,
+  toWorkData,
+  assertPlain,
+  ID_PREFIX,
+} from '@phone-sim/shared'
 import { resetDatabase, makeBlob } from './support/fake-db.js'
 
 beforeEach(async () => {
@@ -61,6 +70,30 @@ describe('A-6 复制项目：资源深拷贝，互不影响', () => {
       // 归属必须指向副本，否则删除副本时清不掉
       expect(asset.projectId).toBe(copy.id)
     }
+  })
+
+  it('副本不会凭空补出 undefined 字段（否则副本永远导不出去）', async () => {
+    const { project } = await seedProjectWithAssets()
+    // 回复本来不带 mediaAssetIds —— 换 id 时不能给它补一个 undefined
+    project.appData.x.replies = [createComment('post_1', { content: '回复' })]
+    await repo.saveProject(project)
+
+    const copy = await service.duplicateProject(project.id)
+
+    expect('mediaAssetIds' in copy.appData.x.replies[0]).toBe(false)
+    expect(() => assertPlain(toWorkData(copy))).not.toThrow()
+  })
+
+  it('打开旧项目时清掉历史遗留的 undefined 键', async () => {
+    const { project } = await seedProjectWithAssets()
+    // 老版本复制过的项目里，这条回复带着 `mediaAssetIds: undefined`
+    project.appData.x.replies = [{ ...createComment('post_1'), mediaAssetIds: undefined }]
+    await repo.saveProject(project)
+
+    const loaded = await service.readProject(project.id)
+
+    expect('mediaAssetIds' in loaded.appData.x.replies[0]).toBe(false)
+    expect(() => assertPlain(toWorkData(loaded))).not.toThrow()
   })
 
   it('副本内所有引用都重写为新 assetId，不残留旧 id', async () => {

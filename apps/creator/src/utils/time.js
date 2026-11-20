@@ -82,6 +82,25 @@ export function fromDateTimeLocal(value) {
   return Number.isFinite(ts) ? new Date(ts).toISOString() : null
 }
 
+/**
+ * 时间平移量的口语说法：「2 分钟」「1 小时 20 分钟」。
+ *
+ * 只说绝对值，方向由调用方补（往后 / 往前）—— 免得出现「-2 分钟」这种
+ * 需要读第二遍才知道往哪边动的文案。
+ *
+ * @param {number} ms 毫秒，符号被忽略
+ * @returns {string}
+ */
+export function formatTimeShift(ms) {
+  const total = Math.abs(ms)
+  const minutes = Math.round(total / MINUTE)
+  if (!minutes) return `${Math.max(1, Math.round(total / 1000))} 秒`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (!hours) return `${rest} 分钟`
+  return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`
+}
+
 function pad(n) {
   return String(n).padStart(2, '0')
 }

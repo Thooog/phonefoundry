@@ -8,6 +8,7 @@ import {
   parseConversationText,
   parseDateLine,
   resolveImportTimes,
+  retimeMessage,
   threadOf,
   updateConversation,
   updateMessage,
@@ -476,5 +477,96 @@ describe('contentType 与消息图片', () => {
     })
     expect(created.contentType).toBe('image')
     expect(created.mediaAssetIds).toEqual(['ast_a', 'ast_b'])
+  })
+})
+
+/* ───────────────── 改一处时间，后面的消息跟着平移 ───────────────── */
+
+describe('retimeMessage：改锚点的时刻，后面整段跟着挪', () => {
+  /** 按「每条第 N 秒」造一条会话，另一个会话放一条做隔离对照 */
+  function scene(offsets) {
+    const messages = offsets.map((offset, i) => ({
+      id: `msg_${i}`,
+      conversationId: 'conv_1',
+      senderCharacterId: 'chr_b',
+      content: `第 ${i} 条`,
+      displayTime: new Date(BASE + offset * 1000).toISOString(),
+      contentType: 'text',
+      readAt: null,
+    }))
+    messages.push({
+      id: 'msg_other',
+      conversationId: 'conv_2',
+      senderCharacterId: 'chr_b',
+      content: '别的会话',
+      displayTime: new Date(BASE + 90 * 1000).toISOString(),
+      contentType: 'text',
+      readAt: null,
+    })
+    return createEditor({
+      characters: projectWithCast().characters,
+      appData: {
+        messages: {
+          conversations: [
+            { id: 'conv_1', title: '', participantIds: ['chr_b'] },
+            { id: 'conv_2', title: '', participantIds: ['chr_b'] },
+          ],
+          messages,
+        },
+      },
+    })
+  }
+  /** 会话内每条相对 BASE 的秒数，便于直接比对「平移了多少」 */
+  const offsetsOf = (editor, conversationId = 'conv_1') =>
+    threadOf(editor.project, conversationId).map((m) => (Date.parse(m.displayTime) - BASE) / 1000)
+
+  it('锚点 → +9 分钟：后面的每条都 +9 分钟，前面的不动', () => {
+    const editor = scene([0, 60, 120, 180])
+    const { deltaMs, shifted } = retimeMessage(
+      editor, 'conv_1', 'msg_1', new Date(BASE + 600 * 1000).toISOString(),
+    )
+    expect(shifted).toBe(2)
+    expect(deltaMs).toBe(9 * 60 * 1000)
+    expect(offsetsOf(editor)).toEqual([0, 600, 660, 720])
+  })
+
+  it('往前挪同样成立（差值为负），相对间隔一点不变', () => {
+    const editor = scene([0, 60, 120, 180])
+    const { deltaMs, shifted } = retimeMessage(
+      editor, 'conv_1', 'msg_2', new Date(BASE - 60 * 1000).toISOString(),
+    )
+    expect(shifted).toBe(1)
+    expect(deltaMs).toBe(-180 * 1000)
+    expect(offsetsOf(editor)).toEqual([0, 60, -60, 0])
+  })
+
+  it('改最后一条：没有消息跟着动', () => {
+    const editor = scene([0, 60, 120])
+    const { shifted } = retimeMessage(editor, 'conv_1', 'msg_2', new Date(BASE + 3600 * 1000).toISOString())
+    expect(shifted).toBe(0)
+    expect(offsetsOf(editor)).toEqual([0, 60, 3600])
+  })
+
+  it('只动同一个会话，别的会话原样', () => {
+    const editor = scene([0, 60, 120])
+    retimeMessage(editor, 'conv_1', 'msg_0', new Date(BASE + 600 * 1000).toISOString())
+    expect(offsetsOf(editor, 'conv_2')).toEqual([90])
+  })
+
+  it('锚点时间本身是脏值时只落锚点，不拿 NaN 去平移别人', () => {
+    const editor = scene([0, 60])
+    editor.project.appData.messages.messages[0].displayTime = '不是时间'
+    const { deltaMs, shifted } = retimeMessage(editor, 'conv_1', 'msg_0', new Date(BASE + 600 * 1000).toISOString())
+    expect(deltaMs).toBe(0)
+    expect(shifted).toBe(0)
+    expect(offsetsOf(editor)).toEqual([600, 60])
+  })
+
+  it('目标时间不可解析时一个字都不写', () => {
+    const editor = scene([0, 60])
+    const before = editor.mutations
+    const result = retimeMessage(editor, 'conv_1', 'msg_0', '不是时间')
+    expect(result).toEqual({ deltaMs: 0, shifted: 0 })
+    expect(editor.mutations).toBe(before)
   })
 })

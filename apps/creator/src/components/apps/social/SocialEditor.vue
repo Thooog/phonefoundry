@@ -878,5 +878,6 @@ onBeforeUnmount(()=>{document.removeEventListener('pointerdown',closeMenus);docu
 .ig-post-text-wrap{position:relative;min-width:0}.x-post-text-highlight{position:absolute;inset:0;pointer-events:none;white-space:pre-wrap;overflow-wrap:anywhere;padding:0;font:400 18px/1.7 var(--font-story);overflow:hidden}.igcard__text.x-post-text-input{position:relative;color:transparent;caret-color:var(--c-text);-webkit-text-fill-color:transparent;background:transparent}
 .iged[data-platform=instagram] .x-post-text-highlight{--hashtag-color:#4d4bb9}
 .igcard__text.x-post-text-input::placeholder{-webkit-text-fill-color:var(--c-text-3);color:var(--c-text-3)}
+.igcard__text.x-post-text-input::selection{background:rgba(48,50,47,.16)}
 @media(max-width:767px){.x-post-text-highlight{font-size:17px}}
 </style>

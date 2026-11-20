@@ -658,12 +658,16 @@
    不会出现"居中把左边几张推到滚动区之外、拉不回来"的坑。
    浏览器不认 safe 时退回普通居中/起始，也不影响可用性。 */
 .pui-pho__thumbs {
-  bottom: calc(var(--pui-homebar-h) + 56px);
+  /* 条子直接坐在操作栏顶边上，中间不留白 —— 真机就是这样上下两段紧邻的 */
+  bottom: calc(var(--pui-homebar-h) + 44px);
   display: flex;
+  align-items: center;
   justify-content: safe center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 2px;
+  height: 40px;
+  padding: 0 12px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
 }
 
@@ -673,11 +677,11 @@
 
 .pui-pho__thumb {
   flex: 0 0 auto;
-  width: 40px;
+  /* 高度统一、宽度跟原图比例走 —— 真机缩略图不是清一色方块 */
   height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
   background: var(--pui-gray-5);
   cursor: pointer;
@@ -686,8 +690,8 @@
 
 .pui-pho__thumb img {
   display: block;
-  width: 100%;
-  height: 100%;
+  height: 40px;
+  width: auto;
   object-fit: cover;
 }
 
@@ -703,32 +707,45 @@
 
 .pui-pho__thumb-empty {
   display: block;
-  width: 100%;
-  height: 100%;
+  /* 没有图时按钮宽度只由内容决定，这里必须给一个实体尺寸，否则会缩成 0 宽 */
+  width: 40px;
+  height: 40px;
   background: var(--pui-gray-5);
 }
 
-/* 操作栏：分享/信息/调整是纯外观，爱心/删除是真的改标记，见文件头第 6 条 */
+/*
+ * 操作栏：分享 / 收藏 / 信息 / 删除，四颗等距排开。
+ *
+ * 之前是 `auto 1fr auto` 三列却塞了四个控件，第四颗被挤到隐式第二行，
+ * 于是整条栏比预期高一倍、图标压到缩略图上 —— 布局问题，不是 z-index 问题。
+ * 现在固定四列，每列一份，行高只有一行。
+ */
 .pui-pho__vfoot {
   bottom: 0;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 0 20px calc(var(--pui-homebar-h) + 6px);
+  justify-items: center;
+  height: calc(var(--pui-homebar-h) + 44px);
+  padding: 0 12px;
 }
 
+/*
+ * 四颗图标本身不带圆形底板：真机这块就是四个蓝色线描图标平铺，
+ * 每颗套一个灰圆会看着像还没做完的原型按钮。底板只在按下时出现，
+ * 用来给触感一点回应。
+ */
 .pui-pho__act {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   /* span → button 的复位：尺寸/配色全部由这里决定，不吃 UA 默认样式 */
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: rgba(118, 118, 128, 0.12);
+  background: transparent;
   color: var(--pui-blue);
   font: inherit;
   cursor: pointer;
@@ -736,43 +753,8 @@
 }
 
 .pui-pho__act svg {
-  width: 20px;
-  height: 20px;
-}
-
-.pui-pho__actpill {
-  display: flex;
-  align-items: center;
-  height: 36px;
-  border-radius: 999px;
-  background: rgba(118, 118, 128, 0.12);
-  color: var(--pui-blue);
-}
-
-.pui-pho__actunit {
-  flex: 1 1 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.pui-pho__actunit svg {
-  width: 21px;
-  height: 21px;
-}
-
-/* 已收藏：心形变实心，颜色仍是系统的蓝 */
-.pui-pho__actunit.is-on {
-  color: var(--pui-blue);
+  width: 24px;
+  height: 24px;
 }
 
 /*
@@ -781,11 +763,7 @@
  */
 .pui-pho__act.pui-pho__act--ping,
 .pui-pho__vmore.pui-pho__vmore--ping {
-  background: rgba(0, 122, 255, 0.24);
-}
-
-.pui-pho__actunit.pui-pho__actunit--ping {
-  background: rgba(0, 122, 255, 0.18);
+  background: rgba(0, 122, 255, 0.14);
 }
 
 /*

@@ -3,14 +3,15 @@ import { createChatOperations } from './chat-operations.js'
 import { createConversation, createMessage } from '@phone-sim/shared'
 import {
   MESSAGE_MEDIA_MAX,
+  normalizeCallDuration,
   normalizeDuration,
   normalizeMessageMediaIds,
   typeCleanupFor,
 } from './messages.js'
 
 const APP = 'kakaotalk'
-const { nearAnchor, ensureBucket, conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage } = createChatOperations(APP)
-export { conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage }
+const { nearAnchor, ensureBucket, conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage, retimeMessage } = createChatOperations(APP)
+export { conversationsOf, threadOf, deleteConversation, countMessagesOf, deleteMessage, retimeMessage }
 
 /**
  * KakaoTalk 能发哪几种消息。
@@ -297,7 +298,7 @@ export function addMessage(editor, conversationId, input = {}) {
           return {
             callKind: kind,
             callStatus: status,
-            ...(status === 'completed' ? { durationSec: normalizeDuration(input.durationSec) } : {}),
+            ...(status === 'completed' ? { durationSec: normalizeCallDuration(input.durationSec) } : {}),
           }
         })()
       : {}),
@@ -337,7 +338,6 @@ export function updateMessage(editor, messageId, patch) {
   if (Object.keys(clean).length === 0) return null
 
   if (clean.content !== undefined) clean.content = String(clean.content).slice(0, MESSAGE_CONTENT_MAX_LENGTH)
-  if (clean.durationSec !== undefined) clean.durationSec = normalizeDuration(clean.durationSec)
   if (clean.transcript !== undefined) clean.transcript = normalizeTranscript(clean.transcript)
 
   // 白名单：不认识的类型回落 text（与 messages.js 同一条规则）
@@ -352,6 +352,17 @@ export function updateMessage(editor, messageId, patch) {
    * 传进来时 contentType 是 undefined，按 9 张判才对。
    */
   const targetType = clean.contentType ?? previous?.contentType ?? 'text'
+
+  /*
+   * 时长按**目标类型**清洗：语音是「按住说一条」，夹到 600 秒；
+   * 通话没有上限 —— 打两小时的电话是常态，截成 10 分钟就是篡改数据。
+   * 所以放在 targetType 之后算，而不是一进门统一按语音那条规则处理。
+   */
+  if (clean.durationSec !== undefined) {
+    clean.durationSec = targetType === 'call'
+      ? normalizeCallDuration(clean.durationSec)
+      : normalizeDuration(clean.durationSec)
+  }
 
   /*
    * 通话子维度按**目标类型**处理，与媒体上限同一逻辑：

@@ -8,7 +8,7 @@ import { usePreviewBridge } from '../preview/use-preview-bridge.js'
 import { collectPreviewAssets, assetsFingerprint } from '../preview/collect-assets.js'
 import { parsePreviewTarget } from '../preview/preview-target.js'
 
-const PLAYER_SRC = './player-runtime/'
+const PLAYER_SRC = './player-runtime/preview.html'
 /** 子端 1.2s 没数据就进空态；这里给 2.5s 再提示，避免抢跑误报 */
 const HANDSHAKE_WARN_MS = 2500
 /** 连续编辑时合并重建任务（桥自己还有 120ms 的发送节流） */

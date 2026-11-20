@@ -25,6 +25,8 @@ export function useMessageDrafts(conversations, operations) {
       const id = await commitMessageDraft(draft, operations.forConversation(conv, draft))
       drafts[conv.id] = emptyMessageDraft()
       operations.select(id)
+      // 新消息落在时间线末尾，提交后要把它露出来（滚动时机由各编辑器自己决定）
+      operations.afterSubmit?.(id, conv)
     } catch (error) { operations.error(error.message) }
     finally { submitting.value = false }
   }

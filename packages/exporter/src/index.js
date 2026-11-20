@@ -15,7 +15,7 @@ import {
 import { sizeHint, sizeTier } from './estimate.js'
 export { buildWorkHtml, escapeHtmlText, escapeJsonForScriptNode } from './build-html.js'
 export { planAssetFiles } from './group-assets.js'
-export { buildZip, readZip, normalizeZipPath } from './pack-zip.js'
+export { buildZip, readZip, normalizeZipPath, declaredUnzipBytes } from './pack-zip.js'
 export {
   BACKUP_FORMAT,
   BACKUP_VERSION,

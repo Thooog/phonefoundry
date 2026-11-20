@@ -3,7 +3,7 @@ import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import {
   createId, DEFAULT_HOME_WIDGET_SIZE, findHomeSpace, fitsHomeHtml, HOME_COLUMNS, HOME_HTML_LIMIT,
-  HOME_PRESETS, HOME_ROWS, homeItemCells, homeItemName, homeItemSize,
+  HOME_PRESETS, HOME_ROWS, HOME_WIDGET_MAX_SPAN, homeItemCells, homeItemName, homeItemSize,
   HOME_WEATHER, homeWeather, homeSchedules,
   moveHomeItem, resolveHomeLayout,
   DECORATIVE_APPS, canRemoveHomeItem, hasHomeRestoreCapacity, homeAppDefinition, importHomeApps, removeHomeItem,
@@ -46,9 +46,36 @@ function editPreset() {
   if (selected.value.presetId === 'date') presetContent.value = { schedules: homeSchedules(selected.value.content) }
   presetDialog.value.showModal()
 }
+/**
+ * 把编辑中的小组件内容抽成纯值。
+ *
+ * 不能写 `{ ...presetContent.value }`：presetContent 是 ref，浅展开只把**顶层**变成普通对象，
+ * 嵌套的 schedules 仍是响应式代理。代理一旦随 patch 进入项目树，
+ * 自动保存的 structuredClone 会抛 DataCloneError（该调用在它的 try 之外），
+ * 状态就永久停在「保存中」，一个字都不会落盘。
+ * 这里按预设逐字段取值，顺便和 readHomeItem 的清洗口径对齐。
+ */
+function presetContentSnapshot() {
+  if (presetEditing.value?.presetId === 'date') {
+    return {
+      schedules: (presetContent.value.schedules ?? []).map(row => ({
+        title: String(row?.title ?? ''),
+        start: String(row?.start ?? ''),
+        end: String(row?.end ?? ''),
+      })),
+    }
+  }
+  const keys = presetEditing.value?.presetId === 'weather'
+    ? ['value', 'detail', 'high', 'low']
+    : ['title', 'detail', 'time']
+  return Object.fromEntries(keys.map(key => [key, String(presetContent.value[key] ?? '')]))
+}
+
 function savePreset() {
   if (editor.isReadOnly || !presetEditing.value) return
-  commit(items.value.map(item => item.id === presetEditing.value.id ? { ...item, content: { ...presetContent.value } } : item))
+  const editing = presetEditing.value
+  const content = presetContentSnapshot()
+  commit(items.value.map(item => item.id === editing.id ? { ...item, content } : item))
   presetDialog.value.close()
   presetEditing.value = null
 }
@@ -93,20 +120,50 @@ const occupied = computed(() => {
 })
 
 const form = ref(blankForm())
-const widgetDimensionOptions = ['1', '2', '3', '4']
+// 尺寸选项由共享常量派生：界面上能选的和数据里能存的必须是同一份数字
+const widgetDimensionOptions = Array.from({ length: HOME_WIDGET_MAX_SPAN }, (_, index) => String(index + 1))
 const widgetDimensions = computed(() => form.value.size.split('x'))
 const widgetWidth = computed({
   get: () => widgetDimensions.value[0],
   set: width => { form.value.size = `${width}x${widgetDimensions.value[1]}` },
 })
-const originalHeight = computed(() => widgetDimensionOptions.includes(widgetDimensions.value[1])
-  ? ''
-  : `原高度 ${widgetDimensions.value[1]} 格`)
 const widgetHeight = computed({
-  get: () => originalHeight.value ? '' : widgetDimensions.value[1],
+  get: () => widgetDimensions.value[1],
   set: height => {
     if (height) form.value.size = `${widgetDimensions.value[0]}x${height}`
   },
+})
+/**
+ * 桌面布局里的实时预览。
+ *
+ * 表单内容直接覆盖到右侧桌面上的那一个小组件：改 HTML、改尺寸，看到的就是保存后的样子。
+ * 200ms 防抖：srcdoc 一变 iframe 就整页重建，逐键重建会卡住输入。
+ * 只覆盖这一个 id，其余项原样返回，避免整块桌面重新 patch。
+ */
+const livePreviewHtml = ref('')
+let previewTimer = 0
+watch(() => form.value.html, html => {
+  clearTimeout(previewTimer)
+  previewTimer = setTimeout(() => { livePreviewHtml.value = html }, 200)
+})
+const previewItems = computed(() => {
+  const editing = items.value.find(item => item.id === form.value.id)
+  // 没有已存在的项（新建），或源码被清空：不覆盖，桌面照旧
+  if (!editing || !livePreviewHtml.value.trim()) return null
+  const html = livePreviewHtml.value
+  const name = form.value.name.trim() || editing.name
+  const patch = { html, name }
+  // 尺寸没变：只换内容
+  if (htmlItemSize(editing) === form.value.size) {
+    return items.value.map(item => item.id === editing.id ? { ...item, ...patch } : item)
+  }
+  // 尺寸也实时，但只在放得下的时候挪；放不下就退回原尺寸，别让预览叠到别人身上
+  const draft = form.value.size === '1x1'
+    ? { ...patch, kind: 'html-app' }
+    : { ...patch, kind: 'html-widget', size: form.value.size }
+  const position = findHomeSpace(items.value.filter(item => item.id !== editing.id), draft, editing)
+  if (!position) return items.value.map(item => item.id === editing.id ? { ...item, ...patch } : item)
+  return items.value.map(item => item.id === editing.id ? { ...item, ...draft, ...position } : item)
 })
 const formMessage = ref('')
 const reading = ref(false)
@@ -123,6 +180,7 @@ drafts?.set(draftKey, hasDraft)
 onBeforeUnmount(() => {
   drafts?.delete(draftKey)
   formVersion += 1
+  clearTimeout(previewTimer)
 })
 
 function confirmDiscard() {
@@ -150,6 +208,8 @@ function resetForm() {
   reading.value = false
   form.value = blankForm()
   formMessage.value = ''
+  clearTimeout(previewTimer)
+  livePreviewHtml.value = ''
 }
 
 watch(() => editor.project?.id, () => {
@@ -169,13 +229,14 @@ async function restoreDefaultLayout() {
   if (editor.isReadOnly || !editor.project || selected.value) return
   const confirmed = await ui.confirm({
     title: '恢复默认桌面？',
-    message: '内置应用将恢复初始位置，新增的装饰应用和小组件将从桌面移除。自定义图标可从应用包恢复。当前未保存的 HTML 编辑也会清空。',
+    message: '内置应用将恢复初始位置，新增的装饰应用和小组件将从桌面移除，可从应用包找回。当前未保存的 HTML 编辑也会清空。',
     confirmText: '恢复默认',
     cancelText: '取消',
   })
   if (!confirmed || editor.isReadOnly || selected.value) return
+  // 自定义图标和小组件都留着源码：它们没有别的副本，从这里丢掉就真没了
   const removedIcons = [...items.value, ...(layout.value.removedItems ?? [])]
-    .filter(item => item.kind === 'html-app')
+    .filter(item => ['html-app', 'html-widget'].includes(item.kind))
   commit(resolveHomeLayout(editor.project, null).items, removedIcons)
   resetForm()
   packageOpen.value = false
@@ -372,17 +433,14 @@ function saveHtml() {
         </section>
 
         <form v-if="!editor.isReadOnly" class="home-editor__section home-editor__form" aria-labelledby="home-html-heading" @submit.prevent="saveHtml">
-          <div>
-            <h2 id="home-html-heading">{{ form.id ? '编辑自定义项目' : '导入 HTML' }}</h2>
-            <p id="home-html-help" class="home-editor__hint">支持 HTML、内联 CSS 和嵌入的位图，最大 256 KiB。作品中仅作静态展示。</p>
-          </div>
+          <h2 id="home-html-heading">{{ form.id ? '编辑自定义项目' : '导入 HTML' }}</h2>
           <div class="home-editor__fields">
             <div class="home-editor__dimensions">
               <AppField label="宽度（格）" field-id="home-item-width">
                 <AppSelect id="home-item-width" v-model="widgetWidth" :options="widgetDimensionOptions" :disabled="reading" />
               </AppField>
               <AppField label="高度（格）" field-id="home-item-height">
-                <AppSelect id="home-item-height" v-model="widgetHeight" :options="widgetDimensionOptions" :placeholder="originalHeight" :disabled="reading" />
+                <AppSelect id="home-item-height" v-model="widgetHeight" :options="widgetDimensionOptions" :disabled="reading" />
               </AppField>
             </div>
             <AppField label="名称" field-id="home-item-name">
@@ -390,7 +448,7 @@ function saveHtml() {
             </AppField>
           </div>
           <AppField class="home-editor__source" label="HTML 源码" field-id="home-item-html">
-            <textarea id="home-item-html" v-model="form.html" rows="6" spellcheck="false" :disabled="reading" aria-describedby="home-html-help" />
+            <textarea id="home-item-html" v-model="form.html" rows="6" spellcheck="false" :disabled="reading" />
           </AppField>
           <div class="home-editor__actions">
             <AppUploadButton size="sm" accept=".html,text/html" :multiple="false" :disabled="reading" test-id="home-html-file" @files="importHtml">{{ reading ? '正在读取' : '选择 HTML 文件' }}</AppUploadButton>
@@ -406,7 +464,7 @@ function saveHtml() {
         <div class="home-editor__device-slot">
           <div class="home-editor__phone" role="group" aria-labelledby="home-board-heading">
             <DevicePreview :time-format="settings.timeFormat">
-              <HomeDesktop :work="editor.project" :resolve-asset="resolveWallpaperAsset" :editor="!editor.isReadOnly" :launchable="false">
+              <HomeDesktop :work="editor.project" :items="previewItems" :resolve-asset="resolveWallpaperAsset" :editor="!editor.isReadOnly" :launchable="false">
                 <template v-if="!editor.isReadOnly" #cells="{ area }">
                   <button
                     v-for="(_, slot) in (area === 'grid' ? HOME_COLUMNS * HOME_ROWS : HOME_COLUMNS)"
@@ -434,7 +492,7 @@ function saveHtml() {
           <p class="home-editor__status" role="status">{{ boardMessage || (selected ? `已选中「${homeItemName(selected)}」，请选择目标格。` : '') }}</p>
           <div class="home-editor__actions">
             <template v-if="selected">
-              <AppButton v-if="selected.kind === 'preset' && selected.presetId !== 'clock'" size="sm" variant="ghost" @click="editPreset">修改 HTML</AppButton>
+              <AppButton v-if="selected.kind === 'preset' && selected.presetId !== 'clock'" size="sm" variant="ghost" @click="editPreset">修改内容</AppButton>
               <AppButton v-if="selected.kind.startsWith('html-')" size="sm" variant="ghost" @click="editSelected">编辑</AppButton>
               <AppButton v-if="canRemoveHomeItem(editor.project, selected)" size="sm" variant="danger" @click="removeSelected">移除</AppButton>
               <span v-else class="home-editor__hint">有作品内容的应用和设置不能移除。</span>
@@ -623,7 +681,9 @@ function saveHtml() {
   }
   /* 滚动视口四面各让 4px（负 margin 抵消，内容位置不变）：
      字段与文本域贴着滚动面，:focus-visible 的 3px 焦点环会被裁掉 */
-  .home-editor__tools { overflow: auto; padding: 4px; margin: -4px; }
+  /* 能滚但不画滚动条：这一列很长，条子杵在预设和桌面布局之间太抢眼 */
+  .home-editor__tools { overflow: auto; padding: 4px; margin: -4px; scrollbar-width: none; }
+  .home-editor__tools::-webkit-scrollbar { display: none; }
   .home-editor__form { display: flex; flex: 1; flex-direction: column; }
   .home-editor__source { flex: 1; min-height: 86px; }
   .home-editor__source :deep(.ui-field__control) { flex: 1; min-height: 0; }

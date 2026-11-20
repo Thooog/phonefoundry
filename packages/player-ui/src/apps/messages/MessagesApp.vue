@@ -22,8 +22,8 @@
 <script setup>
 import MessagesMediaViewer from './MessagesMediaViewer.vue'
 import { useMessageViewer } from '../shared/use-message-viewer.js'
-import { computed, nextTick, ref, watch } from 'vue'
-import { buildConversationList, buildThread, buildContacts, TIME_FORMAT } from '@phone-sim/shared'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { buildConversationList, buildThread, buildContacts, dayRelation, TIME_FORMAT } from '@phone-sim/shared'
 import ScrollArea from '../../appkit/ScrollArea.vue'
 import Avatar from '../../appkit/Avatar.vue'
 import EmptyState from '../../appkit/EmptyState.vue'
@@ -132,16 +132,62 @@ const activeConv = computed(() => conversations.value.find((c) => c.id === scree
  * 「信息」钮回到聊天（上一层就是会话）；「呼叫」跳电话应用直接拨出。 */
 const contacts = computed(() => (work.value ? buildContacts(work.value) : []))
 const isContactScreen = computed(() => screen.value?.name === 'contact')
-const activeMsgContact = computed(
-  () => (isContactScreen.value ? contacts.value.find((c) => c.id === screen.value?.params) ?? null : null),
-)
 
-/** 当前会话对应的联系人：1:1 会话且对方在通讯录里才有点开的意义（群聊没有"这一个人"） */
+/**
+ * 会话里的「对方」。participantIds 只装对方（所属人永远从 workSettings 读，
+ * 见 editing/messages.js 文件头），但示例作品 / 旧数据可能把所属人也写进去了，
+ * 所以两侧都按「去掉所属人」来算 —— 拿数组长度当人数会把单聊判成 2 人。
+ */
+function peerIdsOf(conv) {
+  return (conv?.participantIds ?? []).filter((id) => id !== ownerCharacterId.value)
+}
+
+/**
+ * 某个角色对应的联系人卡片。
+ *
+ * 优先通讯录里那条记录（它带着用户填的备注名 / 号码 / 邮箱）。
+ * 没有记录时用「角色 + 它的信息账号」临场派生一张 **只读** 卡片：
+ * 角色可能刚在「人物」里建好、还没进通讯录，此时顶栏头像如果点了没反应，
+ * 就是一个假入口（真机即使对方不在通讯录，点顶栏也看得到名字与号码）。
+ * 派生对象不写回作品，只在读取端存在。
+ */
+function contactForCharacter(characterId) {
+  if (!characterId || !work.value) return null
+  const character = work.value.characters.find((c) => c.id === characterId)
+  if (!character) return null
+  const inBook = contacts.value.find((c) => c.characterId === characterId)
+  if (inBook) return inBook
+  const account = (work.value.platformAccounts ?? []).find(
+    (a) => a.characterId === characterId && a.platform === 'messages',
+  )
+  return {
+    id: characterId,
+    characterId,
+    name: account?.displayName || character.name || '（无姓名）',
+    avatarAssetId: account?.avatarAssetId || character.avatarAssetId || null,
+    phoneNumber: account?.phoneNumber ?? '',
+    note: '',
+    email: account?.email ?? '',
+    derived: true,
+  }
+}
+
+const activeMsgContact = computed(() => {
+  if (!isContactScreen.value || !work.value) return null
+  const key = screen.value?.params
+  if (!key) return null
+  // 路由参数可能是通讯录记录 id，也可能是派生卡片用的 characterId
+  return contacts.value.find((c) => c.id === key) ?? contactForCharacter(key)
+})
+
+/** 当前会话对应的联系人：1:1 会话（对方恰好一个人）才有点开的意义 —— 群聊没有"这一个人" */
 const chatContact = computed(() => {
-  if (!isDetail.value) return null
+  if (!isDetail.value || !work.value) return null
   const conv = conversations.value.find((c) => c.id === screen.value?.params)
-  if (!conv || conv.participantIds.length !== 2) return null
-  return contacts.value.find((c) => c.characterId && conv.participantIds.includes(c.characterId)) ?? null
+  if (!conv) return null
+  const peers = peerIdsOf(conv)
+  if (peers.length !== 1) return null
+  return contactForCharacter(peers[0])
 })
 
 function openContactFromChat() {
@@ -190,27 +236,108 @@ const peerAvatarId = computed(() => activeConv.value?.avatarAssetId ?? null)
 /** 贴底是聊天应用的基本预期 */
 const scroller = ref(null)
 
-async function scrollToBottom() {
-  await nextTick()
-  scroller.value?.scrollToBottom()
+/* ── 悬浮顶栏的底色：只在消息真的滚到它背后时才出现 ──
+ *
+ * 顶栏本身是一块「压在消息区之上」的毛玻璃。静止（消息还没顶上来）时
+ * 它背后是纯白，那层白底 + 模糊会变成一块边界可见的白板 —— 在设备框里
+ * 更明显：backdrop-filter 的采样范围会越过屏幕圆角，把边框的深色也糊进来，
+ * 整块就成了带下沿的浅灰面板（用户截图里圈出来的就是它）。所以底色放进
+ * 独立子层，由内容位置决定淡入淡出：消息顶到顶栏下方才显形，此时它才真的
+ * 在"遮"住东西。
+ * 判据用 spacer 底边与顶栏底边比：两者都是视口坐标，不受滚动容器 padding 影响。
+ */
+const barEl = ref(null)
+const spacerEl = ref(null)
+const barLifted = ref(false)
+let liftRaf = 0
+
+function measureBarLift() {
+  const bar = barEl.value
+  const spacer = spacerEl.value
+  if (!bar || !spacer) return
+  barLifted.value = spacer.getBoundingClientRect().bottom < bar.getBoundingClientRect().bottom - 1
 }
 
-watch(isDetail, (open) => {
-  if (open) {
-    // 搜索是一次性查找：进会话就收起结果，返回列表看到完整会话列表；
-    // 输入草稿同理，不带到另一个会话去。
-    searchQuery.value = ''
-    draft.value = ''
-    void scrollToBottom()
+/** 滚动事件高频，rAF 合帧后再量一次 rect */
+function onThreadScroll() {
+  if (liftRaf) return
+  liftRaf = requestAnimationFrame(() => {
+    liftRaf = 0
+    measureBarLift()
+  })
+}
+
+/** jsdom 没有 rAF：单测里退化到定时器，否则一次渲染测试会抛未捕获异常 */
+const nextFrame = (fn) =>
+  typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 16)
+const dropFrame = (id) => {
+  if (!id) return
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(id)
+  else clearTimeout(id)
+}
+
+/**
+ * 贴底：打开会话必须停在最后一条消息上。
+ *
+ * 只等一个 nextTick 不够 —— 图片是 dataURL，解码发生在首帧之后，那时
+ * scrollHeight 才长高，位置会停在半路；内容刚好溢出一点点时更糟，
+ * 首帧还不溢出、scrollTop 只能写 0，等图片撑开后就成了"停在顶部"。
+ * 所以按帧读到高度连续几帧不再变化为止。玩家自己往上翻的情况
+ * 由"高度不再变化就收手"兜住：解码窗口通常几十毫秒，不会拽着人走。
+ */
+let stickRaf = 0
+function stickToBottom() {
+  dropFrame(stickRaf)
+  let lastHeight = -1
+  let stable = 0
+  const startedAt = performance.now()
+  const step = () => {
+    stickRaf = 0
+    const node = scroller.value?.el
+    const elapsed = performance.now() - startedAt
+    // 预览深链会直接把栈设成会话页：这时组件还没挂载完，滚动节点不存在，
+    // 别当成"已经到底"收手，等下一帧再试（仍然受 1200ms 上限约束）。
+    if (!node) {
+      if (elapsed < 1200) stickRaf = nextFrame(step)
+      return
+    }
+    node.scrollTop = node.scrollHeight - node.clientHeight
+    if (node.scrollHeight === lastHeight) stable += 1
+    else {
+      stable = 0
+      lastHeight = node.scrollHeight
+    }
+    if (stable >= 3 || elapsed > 1200) return
+    stickRaf = nextFrame(step)
   }
-})
+  stickRaf = nextFrame(step)
+}
+
+watch(
+  isDetail,
+  async (open) => {
+    if (open) {
+      // 搜索是一次性查找：进会话就收起结果，返回列表看到完整会话列表；
+      // 输入草稿同理，不带到另一个会话去。
+      searchQuery.value = ''
+      draft.value = ''
+      await nextTick()
+      stickToBottom()
+      measureBarLift()
+    } else {
+      barLifted.value = false
+    }
+  },
+  // 预览深链可能一进来就在会话页：没有 false→true 的变化，watcher 不会自己跑
+  { immediate: true },
+)
 
 // 只在自己发的新消息让条数变化时贴底。单纯改文案不能把用户正在看的位置顶走
 
 watch(
   () => thread.value.length,
   () => {
-    if (isDetail.value) void scrollToBottom()
+    if (isDetail.value) stickToBottom()
   },
 )
 
@@ -229,6 +356,8 @@ function prevMessage(index) {
  * 是否在当前位置插一条居中时间。
  *
  * 跨天不插：那天的日期分隔刚刚显示过，紧接着再打一个时刻是重复信息。
+ * 更早的日子（既不是今天也不是昨天）也不插：那天的日期分隔本身已经写成
+ * 「11月6日 15:17」这种完整戳，再补一条时刻就成了"日期一个、时间一个"。
  */
 function showTimeGap(index) {
   const item = thread.value[index]
@@ -241,6 +370,8 @@ function showTimeGap(index) {
   const sameDay =
     new Date(a).toDateString() === new Date(b).toDateString()
   if (!sameDay) return false
+  const relation = dayRelation(new Date(b), storyDate.value)
+  if (relation !== 'today' && relation !== 'yesterday') return false
   return b - a >= TIME_GAP_MS
 }
 
@@ -280,6 +411,11 @@ function goHome() {
 
 const viewerController = useMessageViewer({ thread, imageSrcs, runtime, timeFormat, tone: 'dark' })
 const { openViewer } = viewerController
+
+onBeforeUnmount(() => {
+  if (liftRaf) cancelAnimationFrame(liftRaf)
+  dropFrame(stickRaf)
+})
 
 </script>
 
@@ -483,7 +619,13 @@ const { openViewer } = viewerController
           消息向上滚时会从它背后虚化穿过（真机的导航栏就是这个行为），
           代价是滚动区要自己留出顶部空白，见下面的 thread-spacer。
         -->
-        <header class="pui-msg__chatbar">
+        <header
+          ref="barEl"
+          class="pui-msg__chatbar"
+          :class="{ 'pui-msg__chatbar--lifted': barLifted }"
+        >
+          <!-- 毛玻璃底色单独一层：静止时透明，消息顶到顶栏下面才淡入 -->
+          <div class="pui-msg__chatbar-bg" aria-hidden="true"></div>
           <button type="button" class="pui-msg__back" data-testid="nav-back" aria-label="返回" @click="goBack">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -546,9 +688,9 @@ const { openViewer } = viewerController
           </button>
         </header>
 
-        <ScrollArea ref="scroller" padding-bottom="14" data-testid="msg-thread-scroll">
+        <ScrollArea ref="scroller" padding-bottom="14" data-testid="msg-thread-scroll" @scroll="onThreadScroll">
           <!-- 给悬浮顶栏让位：这块空白随内容一起滚走，滚过之后消息才穿到顶栏背后 -->
-          <div class="pui-msg__thread-spacer" aria-hidden="true"></div>
+          <div ref="spacerEl" class="pui-msg__thread-spacer" aria-hidden="true"></div>
           <template v-for="(item, index) in thread" :key="item.id">
             <p v-if="item.kind === 'divider'" class="pui-msg__divider">
               <span>{{ item.label }}</span>

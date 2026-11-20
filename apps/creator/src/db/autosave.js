@@ -98,11 +98,31 @@ export function createAutosaver(options) {
     // guard 是异步的；等待期间用户可能通过 patch 换掉项目根对象。
     // 必须在 guard 后读取快照，并在同一个同步区间内取 revision，保证两者匹配。
     const project = readProject()
-    if (!project) return
+    if (!project) {
+      // 没有内存态可写（项目已被关闭）：这次就是最后一次，
+      // 不能停在这里等一个不会到来的下一轮。revision 也要对齐，
+      // 否则 flush 会一直认为"还有东西没落盘"。
+      dirty = false
+      savedRevision = inMemoryRevision
+      setStatus(SAVE_STATUS.SAVED)
+      return
+    }
 
     // 改写会制造两个真相：项目里的 revision 到底是"用户的修改次数"还是"保存器的计数器"。
-    const data = snapshot(project)
     const snapshotRevision = inMemoryRevision
+    let data
+    try {
+      data = snapshot(project)
+    } catch (rawErr) {
+      // 快照本身就会失败：项目树里混进 Vue 响应式代理、函数或 DOM 节点时，
+      // structuredClone 直接抛 DataCloneError。
+      // 这一步必须在 try 里 —— 放在外面抛，异常会绕过下面的错误上报，
+      // 状态永久停在 saving：界面不报错、也不再重试，比"保存失败"难查得多。
+      const err = toStorageError(rawErr)
+      autoRetried = 0
+      setStatus(SAVE_STATUS.ERROR, err)
+      throw err
+    }
 
     setStatus(SAVE_STATUS.SAVING)
 

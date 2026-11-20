@@ -2,7 +2,7 @@
  * 会话与消息的只读派生（KakaoTalk / 信息共用）。
  */
 
-import { formatListTime, formatDayDivider, dayRelation } from '../time/format.js'
+import { formatListTime, formatDayDivider, formatDayDividerStamp, dayRelation } from '../time/format.js'
 
 /**
  * 解析一条内容所属人的显示信息。
@@ -183,7 +183,7 @@ export function buildThread(work, conversationId, { ownerCharacterId = null, sto
       timeline.push({
         kind: 'divider',
         id: `d_${dayKey}`,
-        label: formatDayDivider(date, storyDate),
+        label: formatDayDividerStamp(date, storyDate),
 
         date,
       })

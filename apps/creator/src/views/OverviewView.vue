@@ -100,7 +100,7 @@ function saveInfo() {
 .work-home__hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 24px;padding-bottom:28px;border-bottom:1px solid var(--home-line)}
 .work-home__identity{display:contents}.work-home__eyebrow{grid-row:1;grid-column:1;font-size:12px;line-height:1.7;margin:0}
 .work-home h1{grid-row:2;grid-column:1/-1;min-width:0;max-width:100%;margin-top:8px;font:600 34px/1.4 var(--font-story,'Work Serif','Songti SC',SimSun,serif);letter-spacing:.02em;overflow-wrap:anywhere}
-.work-home__description{grid-row:3;grid-column:1/-1;font-size:14px;line-height:1.8;margin-top:6px;max-width:64ch;white-space:pre-wrap;overflow-wrap:anywhere}.is-empty{color:var(--home-muted)}
+.work-home__description{grid-row:3;grid-column:1/-1;font-size:14px;line-height:1.8;margin-top:6px;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.is-empty{color:var(--home-muted)}
 .work-home__edit{grid-row:1;grid-column:2;justify-self:end;align-self:center;display:flex;align-items:center;background:none;border:0;padding:0;min-height:24px;font-size:12px;color:var(--home-muted);white-space:nowrap}
 .work-home h2{font-size:18px;line-height:1.5;font-weight:600}
 .work-home__resume{padding:26px 0 28px;border-bottom:1px solid var(--home-line)}

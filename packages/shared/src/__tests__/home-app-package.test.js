@@ -88,6 +88,17 @@ describe('desktop app package', () => {
     expect(restored.removedItems).toBeUndefined()
   })
 
+  it('keeps a removed custom widget restorable with its source intact', () => {
+    const work = emptyWork()
+    const widget = { id: 'home_card', kind: 'html-widget', name: '卡片', html: '<b>卡片</b>', size: '2x3', area: 'grid', slot: 4 }
+    work.workSettings.homeLayout = { items: [...resolveHomeLayout(work).items, widget] }
+    save(work, removeHomeItem(work, widget.id))
+    const exported = toWorkData(work)
+    expect(exported.workSettings.homeLayout.removedItems).toContainEqual(widget)
+    const restored = importHomeApps(JSON.parse(JSON.stringify(exported)), [widget.id])
+    expect(restored.items).toContainEqual(widget)
+  })
+
   it('rejects a batch atomically and reserves capacity for removed built-in apps', () => {
     const work = emptyWork()
     save(work, removeHomeItem(work, 'phone'))

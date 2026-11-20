@@ -1,7 +1,7 @@
 
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   buildPhotoGallery,
   buildAlbums,
@@ -307,6 +307,37 @@ const thumbsEl = ref(null)
 const chromeOn = ref(true)
 let scrollRaf = 0
 
+/**
+ * 缩略图条贴住当前照片的下沿。
+ *
+ * 查看器是全屏 contain：照片偏短时下方会留一大片白。条子如果一直钉在
+ * 工具区顶边上，照片和条子之间就空出上百像素，看着像条子掉进了按钮区里。
+ * 这里按照片实际渲染的底边算一次 bottom，但不低于工具区顶边 ——
+ * 照片铺满整屏时退回原位，和真机一样浮在照片上。
+ */
+const thumbsBottom = ref('')
+function measureThumbStrip() {
+  const pager = pagerEl.value
+  if (!pager || !isViewer.value) return
+  const screenEl = pager.parentElement
+  const img = pager.children[viewerIndex.value]?.querySelector('img')
+  if (!screenEl || !img) return
+  const imgBox = img.getBoundingClientRect()
+  // jsdom 里没有布局，拿到的高度恒为 0 —— 直接放弃，让 CSS 默认值生效
+  if (!imgBox.height) return
+  const homebar =
+    parseFloat(getComputedStyle(screenEl).getPropertyValue('--pui-homebar-h')) || 34
+  const floor = homebar + 44
+  const stripHeight = thumbsEl.value?.offsetHeight || 40
+  // 要让条子的「顶边」落在照片底边上，所以从那段空白里再减掉条子自身高度
+  const gapToBottom = screenEl.getBoundingClientRect().bottom - imgBox.bottom - stripHeight
+  thumbsBottom.value = `${Math.max(floor, Math.round(gapToBottom))}px`
+}
+
+onMounted(() => {
+  window.addEventListener('resize', measureThumbStrip)
+})
+
 const currentPhoto = computed(() => viewerList.value[viewerIndex.value] ?? null)
 
 /* ── 玩家标记：收藏 / 移到回收站 ─────────────────────
@@ -328,8 +359,6 @@ const isCurrentFavorite = computed(
 )
 
 const isCurrentInTrash = computed(() => Boolean(currentPhoto.value?.isInTrash))
-
-const isCurrentHidden = computed(() => Boolean(currentPhoto.value?.isHidden))
 
 /** 爱心：收藏 / 再点一次取消，与真机一致 */
 function onFavorite() {
@@ -381,31 +410,6 @@ function onRestore() {
 }
 
 /**
- * 隐藏 = 打 isHidden 软标记，记录与图片资源都留着，「已隐藏」相簿会接住它。
- * 与删除一致：普通照片能藏，回收站里的照片这条入口不显示（下方按钮已按状态收起）。
- * 隐藏后照片退出图库 / 用户相簿 / 个人收藏，所以也要从当前查看器里剔掉。
- */
-function onHide() {
-  ping('hide')
-  const photo = currentPhoto.value
-  if (!photo || isCurrentInTrash.value || isCurrentHidden.value) return
-  setPhotoFlag(photo.id, { isHidden: true })
-  dropFromViewer(photo.id)
-}
-
-/**
- * 取消隐藏 = 把覆盖层里的 isHidden 置回 false（作品数据本身带标记的也一样生效）。
- * 照片随即回到图库、原相簿、个人收藏，并从「已隐藏」的查看器里退出。
- */
-function onUnhide() {
-  ping('unhide')
-  const photo = currentPhoto.value
-  if (!photo || !isCurrentHidden.value) return
-  setPhotoFlag(photo.id, { isHidden: false })
-  dropFromViewer(photo.id)
-}
-
-/**
  * 标题第一行的降级链：地点 → 说明 → 「照片」。
  *
  * 地点是这一版新加的，老作品里一条都没有；直接拿它当标题，
@@ -451,7 +455,10 @@ function syncThumbs(behavior = 'smooth') {
 
 /** 页码由 pager 的 scroll 事件反推，缩略图条跟着这个页码走（拖拽/点缩略图都覆盖） */
 watch(viewerIndex, () => {
-  nextTick(() => syncThumbs())
+  nextTick(() => {
+    syncThumbs()
+    measureThumbStrip()
+  })
 })
 
 /** 退出查看器：状态栏先交还，再退栈（顺序反了会闪一帧白底黑字以外的配色） */
@@ -477,6 +484,7 @@ async function openPhoto(list, index) {
     if (el) el.scrollLeft = el.clientWidth * viewerIndex.value
     // 打开时就落在中间那张：缩略图条得先对齐，不能等第一次翻页才归位
     syncThumbs('auto')
+    measureThumbStrip()
   })
 }
 
@@ -567,6 +575,7 @@ function onPagerScroll() {
 
 /** 查看器被别处弹掉（phone:reset / 回锁屏）时，状态栏字色也要交还 */
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', measureThumbStrip)
   runtime.setStatusTone('auto')
 })
 </script>
@@ -595,7 +604,13 @@ onBeforeUnmount(() => {
               @pointercancel="onPagerPointerUp"
             >
               <div v-for="item in viewerList" :key="item.id" class="pui-pho__slide">
-                <img v-if="urlOf(item)" :src="urlOf(item)" alt="" draggable="false" />
+                <img
+                  v-if="urlOf(item)"
+                  :src="urlOf(item)"
+                  alt=""
+                  draggable="false"
+                  @load="measureThumbStrip"
+                />
                 <div v-else class="pui-pho__broken">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6" />
@@ -651,6 +666,7 @@ onBeforeUnmount(() => {
               ref="thumbsEl"
               class="pui-pho__thumbs"
               :data-on="chromeOn ? 'true' : 'false'"
+              :style="thumbsBottom ? { bottom: thumbsBottom } : null"
               data-testid="photos-viewer-thumbs"
             >
               <button
@@ -691,108 +707,46 @@ onBeforeUnmount(() => {
                 </svg>
               </button>
 
-              <!--
-                同一套画法、同一位置，只按状态换图标与动作：
-                普通照片是「隐藏」（闭眼斜杠），已隐藏的照片换成「取消隐藏」（睁眼）。
-                回收站里的照片这条入口不显示 —— 它不该被藏，只该被还原。
-              -->
               <button
-                v-if="!isCurrentInTrash && !isCurrentHidden"
                 type="button"
                 class="pui-pho__act"
-                :class="{ 'pui-pho__act--ping': pinged === 'hide' }"
-                data-testid="photos-viewer-hide"
-                aria-label="隐藏"
-                @pointerdown="pingDown('hide')"
+                :class="{ 'pui-pho__act--ping': pinged === 'favorite', 'is-on': isCurrentFavorite }"
+                data-testid="photos-viewer-favorite"
+                :data-on="isCurrentFavorite ? 'true' : 'false'"
+                :aria-label="isCurrentFavorite ? '取消收藏' : '收藏'"
+                :aria-pressed="isCurrentFavorite ? 'true' : 'false'"
+                @pointerdown="pingDown('favorite')"
                 @pointerup="pingUp"
                 @pointercancel="pingUp"
                 @pointerleave="pingUp"
-                @click.stop="onHide"
+                @click.stop="onFavorite"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M2.8 12C5.2 7.5 8.4 5.5 12 5.5s6.8 2 9.2 6.5c-2.4 4.5-5.6 6.5-9.2 6.5s-6.8-2-9.2-6.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6" />
-                  <path d="M4.2 4.2 19.8 19.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <svg v-if="isCurrentFavorite" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20.2l-1.2-1.1C6.5 15.2 3.8 12.7 3.8 9.6c0-2.3 1.8-4.1 4.1-4.1 1.4 0 2.7.7 3.9 2 1.2-1.3 2.5-2 3.9-2 2.3 0 4.1 1.8 4.1 4.1 0 3.1-2.7 5.6-7 9.5z" fill="currentColor" />
                 </svg>
-              </button>
-              <button
-                v-else-if="!isCurrentInTrash && isCurrentHidden"
-                type="button"
-                class="pui-pho__act"
-                :class="{ 'pui-pho__act--ping': pinged === 'unhide' }"
-                data-testid="photos-viewer-unhide"
-                aria-label="取消隐藏"
-                @pointerdown="pingDown('unhide')"
-                @pointerup="pingUp"
-                @pointercancel="pingUp"
-                @pointerleave="pingUp"
-                @click.stop="onUnhide"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M2.8 12C5.2 7.5 8.4 5.5 12 5.5s6.8 2 9.2 6.5c-2.4 4.5-5.6 6.5-9.2 6.5s-6.8-2-9.2-6.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20.2l-1.2-1.1C6.5 15.2 3.8 12.7 3.8 9.6c0-2.3 1.8-4.1 4.1-4.1 1.4 0 2.7.7 3.9 2 1.2-1.3 2.5-2 3.9-2 2.3 0 4.1 1.8 4.1 4.1 0 3.1-2.7 5.6-7 9.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
                 </svg>
               </button>
 
-              <span class="pui-pho__actpill">
-                <button
-                  type="button"
-                  class="pui-pho__actunit"
-                  :class="{ 'pui-pho__actunit--ping': pinged === 'favorite', 'is-on': isCurrentFavorite }"
-                  data-testid="photos-viewer-favorite"
-                  :data-on="isCurrentFavorite ? 'true' : 'false'"
-                  :aria-label="isCurrentFavorite ? '取消收藏' : '收藏'"
-                  :aria-pressed="isCurrentFavorite ? 'true' : 'false'"
-                  @pointerdown="pingDown('favorite')"
-                  @pointerup="pingUp"
-                  @pointercancel="pingUp"
-                  @pointerleave="pingUp"
-                  @click.stop="onFavorite"
-                >
-                  <svg v-if="isCurrentFavorite" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 20.2l-1.2-1.1C6.5 15.2 3.8 12.7 3.8 9.6c0-2.3 1.8-4.1 4.1-4.1 1.4 0 2.7.7 3.9 2 1.2-1.3 2.5-2 3.9-2 2.3 0 4.1 1.8 4.1 4.1 0 3.1-2.7 5.6-7 9.5z" fill="currentColor" />
-                  </svg>
-                  <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 20.2l-1.2-1.1C6.5 15.2 3.8 12.7 3.8 9.6c0-2.3 1.8-4.1 4.1-4.1 1.4 0 2.7.7 3.9 2 1.2-1.3 2.5-2 3.9-2 2.3 0 4.1 1.8 4.1 4.1 0 3.1-2.7 5.6-7 9.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="pui-pho__actunit"
-                  :class="{ 'pui-pho__actunit--ping': pinged === 'info' }"
-                  data-testid="photos-viewer-info"
-                  aria-label="照片信息"
-                  @pointerdown="pingDown('info')"
-                  @pointerup="pingUp"
-                  @pointercancel="pingUp"
-                  @pointerleave="pingUp"
-                  @click.stop="ping('info')"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="8.3" fill="none" stroke="currentColor" stroke-width="1.6" />
-                    <path d="M12 11.2v5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <circle cx="12" cy="7.9" r="1" fill="currentColor" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="pui-pho__actunit"
-                  :class="{ 'pui-pho__actunit--ping': pinged === 'adjust' }"
-                  data-testid="photos-viewer-adjust"
-                  aria-label="调整"
-                  @pointerdown="pingDown('adjust')"
-                  @pointerup="pingUp"
-                  @pointercancel="pingUp"
-                  @pointerleave="pingUp"
-                  @click.stop="ping('adjust')"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3.6 8.6h8.2M16.6 8.6h3.8M3.6 15.4h3.8M12.2 15.4h8.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <circle cx="14.2" cy="8.6" r="2.1" fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <circle cx="9.8" cy="15.4" r="2.1" fill="none" stroke="currentColor" stroke-width="1.7" />
-                  </svg>
-                </button>
-              </span>
+              <button
+                type="button"
+                class="pui-pho__act"
+                :class="{ 'pui-pho__act--ping': pinged === 'info' }"
+                data-testid="photos-viewer-info"
+                aria-label="照片信息"
+                @pointerdown="pingDown('info')"
+                @pointerup="pingUp"
+                @pointercancel="pingUp"
+                @pointerleave="pingUp"
+                @click.stop="ping('info')"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8.3" fill="none" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M12 11.2v5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <circle cx="12" cy="7.9" r="1" fill="currentColor" />
+                </svg>
+              </button>
 
               <!--
                 右下角同一个位置、同一套画法，只按状态换图标与动作：

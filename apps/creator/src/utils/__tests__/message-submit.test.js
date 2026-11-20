@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { shouldSubmitMessage } from '../message-submit.js'
 
 describe('message composer submission', () => {
-  it('submits Enter on touch devices and preserves desktop multiline entry', () => {
+  it('submits on a bare Enter and leaves modified Enter for line breaks', () => {
+    expect(shouldSubmitMessage({ key: 'Enter' }, false)).toBe(true)
     expect(shouldSubmitMessage({ key: 'Enter' }, true)).toBe(true)
-    expect(shouldSubmitMessage({ key: 'Enter' }, false)).toBe(false)
-    expect(shouldSubmitMessage({ key: 'Enter', ctrlKey: true }, false)).toBe(true)
-    expect(shouldSubmitMessage({ key: 'Enter', metaKey: true }, false)).toBe(true)
-    expect(shouldSubmitMessage({ key: 'Enter', shiftKey: true }, true)).toBe(false)
+    expect(shouldSubmitMessage({ key: 'Enter', shiftKey: true }, false)).toBe(false)
+    expect(shouldSubmitMessage({ key: 'Enter', ctrlKey: true }, false)).toBe(false)
+    expect(shouldSubmitMessage({ key: 'Enter', metaKey: true }, false)).toBe(false)
+    expect(shouldSubmitMessage({ key: 'Enter', altKey: true }, false)).toBe(false)
   })
   it('supports software keyboards that only emit beforeinput', () => {
     expect(shouldSubmitMessage({ type: 'beforeinput', inputType: 'insertLineBreak' }, true)).toBe(true)

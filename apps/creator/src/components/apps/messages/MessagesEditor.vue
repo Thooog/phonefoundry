@@ -18,7 +18,7 @@ import { useChatImport } from '../../../composables/use-chat-import.js'
  * 是回执，只对手机所属人发的那行有意义（挂在其他角色行后会被忽略）。
  * 没写时刻的行不必担心 —— 它顺着上一条往后推 20 秒（见 editing/messages.js）。
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppButton from '../../ui/AppButton.vue'
 import AppUploadButton from '../../ui/AppUploadButton.vue'
@@ -27,7 +27,8 @@ import { useUiStore } from '../../../stores/ui.js'
 import { useAssetUrls } from '../../../composables/use-asset-urls.js'
 import { prepareImage } from '../../../media/compress-image.js'
 import { orphanAssetIds } from '../../../editing/assets.js'
-import { fromDateTimeLocal, toDateTimeLocal } from '../../../utils/time.js'
+import { fromDateTimeLocal, formatTimeShift, toDateTimeLocal } from '../../../utils/time.js'
+import { scrollToEnd } from '../../../utils/scroll-to-end.js'
 import {
   MESSAGE_CONTENT_MAX_LENGTH,
   MESSAGE_MEDIA_MAX,
@@ -40,6 +41,7 @@ import {
   deleteMessage,
   parseConversationText,
   resolveImportTimes,
+  retimeMessage,
   threadOf,
   updateConversation,
   updateMessage,
@@ -367,6 +369,9 @@ function contactNameOf(characterId) {
 /**
  * 在某条消息的前/后插一条：新消息的 displayTime 贴着锚点时间 ±1 秒
  * （见 editing/messages.js 的 addMessage），物理位置则由数组顺序决定。
+ *
+ * 「在后面新增」是往对话末尾接一句，滚到最新一条；「在前面新增」那条落在对话中间，
+ * 贴底会把人甩出很远，所以只保证新条目露出来。
  */
 function createMessageRelative(conv, message, where) {
   if (readOnly.value) return
@@ -374,12 +379,27 @@ function createMessageRelative(conv, message, where) {
   const created = addMessage(editor, conv.id, payload)
   if (!created) return
   selectMessage(created.id)
+  if (where === 'after') { revealLatest(conv.id); return }
   requestAnimationFrame(() => {
     document.querySelector(`[data-msg-id="${created.id}"]`)?.scrollIntoView({
       block: 'nearest',
       behavior: 'smooth',
     })
   })
+}
+
+/** 把某个会话的时间线滚到最新一条 */
+function scrollToLatest(convId) {
+  scrollToEnd(document.querySelector(`[data-conv-id="${convId}"] .message-timeline`))
+}
+
+/**
+ * 等新节点进 DOM、高度定下来再滚 —— 只等一帧的话，消息里的图片还没撑开，
+ * scrollHeight 偏小，滚完会停在倒数第二条附近。
+ */
+async function revealLatest(convId) {
+  await nextTick()
+  requestAnimationFrame(() => requestAnimationFrame(() => scrollToLatest(convId)))
 }
 
 /**
@@ -403,10 +423,23 @@ function commitContent(message, event) {
   updateMessage(editor, message.id, { content: event.target.value })
 }
 
+/**
+ * 改发送时间：这条改到目标时刻，**它后面的消息一起平移同样的差值**。
+ *
+ * 只改一条会把整段对话的先后关系搅乱（后面的消息时间还停在原处，看起来像
+ * 时间倒流），所以按「修一条 = 整段往后/往前挪」处理，相对间隔保持不变。
+ */
 function commitTime(message, event) {
   const iso = fromDateTimeLocal(event.target.value)
   if (!iso) return
-  updateMessage(editor, message.id, { displayTime: iso })
+  const { deltaMs, shifted } = retimeMessage(editor, message.conversationId, message.id, iso)
+  if (shifted) ui.toast(`后面 ${shifted} 条消息也一起${deltaMs > 0 ? '往后' : '往前'}挪了 ${formatTimeShift(deltaMs)}`)
+}
+
+/** 新消息的时间默认取会话最后一条的时刻；空会话留空，由编辑层取当前时刻 */
+function composerTime(conv) {
+  const list = threadOf(project.value, conv.id)
+  return list.length ? toDateTimeLocal(list[list.length - 1].displayTime) : ''
 }
 
 function commitRead(message, event) {
@@ -591,8 +624,11 @@ function selectedMessages(conv) { return threadOf(project.value, conv.id).filter
 function selectMessage(id) { selectedMessageId.value = id; inspectorOpen.value = false }
 function openMessageProperties(id) { selectedMessageId.value = id; inspectorOpen.value = true }
 watchSelection(() => [selectedRecordId.value, threadOf(project.value, selectedRecordId.value).map(message => message.id)], ([, ids], previous) => { selectedMessageId.value = nextRecordSelection(ids, previous?.[1] ?? [], selectedMessageId.value) }, { immediate: false })
+/** 进会话就落在最近一条上：长对话不该每次都从第一句开始翻 */
+watchSelection(selectedRecordId, id => { if (id) revealLatest(id) }, { immediate: true })
 const { draftFor, submitting, submit } = useMessageDrafts(conversations, {
   readOnly: () => readOnly.value, select: selectMessage, error: message => ui.toast(message, { tone: 'error' }),
+  afterSubmit: (id, conv) => revealLatest(conv.id),
   forConversation: (conv, draft) => {
     const custom = senderOptions(conv).some(sender => sender.id === draft.sender && sender.kind === 'custom')
     const payload = { content: draft.content, contentType: draft.type, ...(draft.sender ? { senderCharacterId: custom ? null : draft.sender, senderName: custom ? draft.sender : null } : {}), ...(draft.time ? { displayTime: fromDateTimeLocal(draft.time) } : {}), durationSec: draft.duration, transcript: draft.transcript }
@@ -736,7 +772,7 @@ const { draftFor, submitting, submit } = useMessageDrafts(conversations, {
 
                   <MessageTimeline v-else appearance="chat" :messages="threadOf(project,conv.id)" :selected="selectedMessageId" :sender="senderLabelOf" :avatar="avatarUrlOf" :media="urlOf" :own="isOwnMessage" :read-only="readOnly" test-prefix="msg" @select="selectMessage" @edit="openMessageProperties" @before="createMessageRelative(conv,$event,'before')" @after="createMessageRelative(conv,$event,'after')" @remove="removeMessage" />
 
-                  <MessageComposer v-show="desktopInspector || !inspectorOpen" appearance="chat" :default-sender-id="conv.participantIds?.[0] || conv.customParticipants?.[0] || ''" :conversation="conv.title || titlePlaceholder(conv)" :draft="draftFor(conv.id)" :senders="senderOptions(conv)" :types="composerTypes" :disabled="readOnly || !hasSendableSender(conv)" :busy="submitting" @submit="submit(conv)" />
+                  <MessageComposer v-show="desktopInspector || !inspectorOpen" appearance="chat" :default-sender-id="conv.participantIds?.[0] || conv.customParticipants?.[0] || ''" :conversation="conv.title || titlePlaceholder(conv)" :draft="draftFor(conv.id)" :default-time="composerTime(conv)" :senders="senderOptions(conv)" :types="composerTypes" :disabled="readOnly || !hasSendableSender(conv)" :busy="submitting" @submit="submit(conv)" />
                 </div>
               </section><InspectorPanel v-model="inspectorOpen" title="消息属性">
                 <ol class="message-properties">

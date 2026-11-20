@@ -549,4 +549,28 @@ describe('通话：子维度白名单与时长共用', () => {
     expect(updateMessage(editor, 'msg_0', { contentType: 'call' }).contentType).toBe('call')
     expect(updateMessage(editor, 'msg_0', { contentType: 'videocall' }).contentType).toBe('text')
   })
+
+  /* 通话时长不设上限：600 秒是「按住说一条」的语音上限，不是打电话的上限 */
+  it('通话时长不按语音上限截断：两小时照写', () => {
+    const editor = scene()
+    const msg = addMessage(editor, 'conv_1', { contentType: 'call', callKind: 'video', durationSec: 7200 })
+    expect(msg.durationSec).toBe(7200)
+    expect(updateMessage(editor, msg.id, { durationSec: 4 * 3600 + 65 }).durationSec).toBe(4 * 3600 + 65)
+  })
+
+  it('通话时长仍取整、下限 1 秒，非法值落成 null', () => {
+    const editor = scene()
+    const msg = addMessage(editor, 'conv_1', { contentType: 'call', durationSec: 90.6 })
+    expect(msg.durationSec).toBe(91)
+    expect(updateMessage(editor, msg.id, { durationSec: 0 }).durationSec).toBe(1)
+    expect(updateMessage(editor, msg.id, { durationSec: 'abc' }).durationSec).toBeNull()
+  })
+
+  it('长通话切成语音不改写已有时长（互切不清时长的老规则优先，不静默截断）', () => {
+    const editor = scene()
+    const call = addMessage(editor, 'conv_1', { contentType: 'call', durationSec: 7200 })
+    // 只有**显式**改时长时才按目标类型的规则清洗；类型互切只搬载体，不动数值
+    expect(updateMessage(editor, call.id, { contentType: 'voice' }).durationSec).toBe(7200)
+    expect(updateMessage(editor, call.id, { durationSec: 7200 }).durationSec).toBe(600)
+  })
 })

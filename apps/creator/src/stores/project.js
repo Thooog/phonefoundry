@@ -52,6 +52,11 @@ export const useProjectStore = defineStore('project', () => {
     readOnlyReason.value = null
     lockedByTabId.value = null
 
+    // 拿到锁之后任何一步失败都必须交还。
+    // 否则心跳会一直为这个项目续租，本页停在空壳工作区（没有项目对象），
+    // 别的标签页却长期显示"被别人编辑中"，只能点强制接管。
+    let lockOwned = false
+
     try {
       await tabGuard.startHeartbeat()
 
@@ -77,21 +82,25 @@ export const useProjectStore = defineStore('project', () => {
         return { ok: true, readOnly: true }
       }
 
+      lockOwned = true
+
       const raw = await service.readProject(id)
       if (!raw) {
-        // 拿到锁但项目没了（刚被另一个标签页删掉）：交还锁，别留着占位
-        await tabGuard.releaseProject()
+        // 拿到锁但项目没了（刚被另一个标签页删掉）：finally 里会交还锁，别留着占位
         loadError.value = new Error('项目不存在，可能已被删除。')
         return { ok: false, reason: 'missing' }
       }
 
       attachProject(raw)
+      // 锁从此归这个项目所有，直到 close() 才释放
+      lockOwned = false
       await service.setRecentProjectId(id)
       return { ok: true }
     } catch (err) {
       loadError.value = toStorageError(err)
       return { ok: false, reason: 'error' }
     } finally {
+      if (lockOwned) await tabGuard.releaseProject()
       loading.value = false
     }
   }
@@ -152,10 +161,20 @@ export const useProjectStore = defineStore('project', () => {
     const result = await tabGuard.forceTakeover(projectId.value)
     if (!result.ok) return { ok: false, reason: 'lock_failed' }
 
-    const raw = await service.readProject(projectId.value)
-    if (!raw) return { ok: false, reason: 'missing' }
-    attachProject(raw)
-    return { ok: true }
+    // 接管成功 = 新锁已经在手，此后失败同样要交还（理由同 open）
+    let lockOwned = true
+    try {
+      const raw = await service.readProject(projectId.value)
+      if (!raw) return { ok: false, reason: 'missing' }
+      attachProject(raw)
+      lockOwned = false
+      return { ok: true }
+    } catch (err) {
+      loadError.value = toStorageError(err)
+      return { ok: false, reason: 'error' }
+    } finally {
+      if (lockOwned) await tabGuard.releaseProject()
+    }
   }
 
   /**
@@ -287,12 +306,29 @@ export const useProjectStore = defineStore('project', () => {
     })
 
     if (projectId.value !== ownerProjectId || isReadOnly.value) {
+      await discardAssetBlob(meta.id)
       throw new Error('作品已切换或失去编辑权，请重新添加图片。')
     }
-    mutate((p) => {
-      p.assets.push(meta)
-    })
+    try {
+      mutate((p) => {
+        p.assets.push(meta)
+      })
+    } catch (err) {
+      // 二进制已落盘但项目没接受这次写入 —— 留着就是一个没有任何 assets
+      // 元信息引用的孤儿，只能等删项目时按 projectId 连带清掉（没有周期 GC）。
+      await discardAssetBlob(meta.id)
+      throw err
+    }
     return meta
+  }
+
+  /** 回收一个刚写入、但没被项目接受的资源。失败不该盖掉原始错误 */
+  async function discardAssetBlob(assetId) {
+    try {
+      await repo.deleteAsset(assetId)
+    } catch {
+      /* 回收失败只是多占一点配额，删项目时还会按 projectId 再清一次 */
+    }
   }
 
   async function getAssetBlob(assetId) {

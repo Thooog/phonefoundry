@@ -19,6 +19,7 @@ import * as service from '../db/project-service.js'
  *   importedAssets: number,
  *   missingAssets: string[],
  *   warnings: string[],
+ *   homeLayoutLoss: { oversized: number, invalid: number }|null,
  * }>}
  */
 export async function importProjectFromFile(file) {
@@ -42,6 +43,8 @@ export async function importProjectFromFile(file) {
     // 包里声明了但没找到文件的图（备份包才有）
     missingAssets: parsed.missingAssets,
     warnings: result.warnings,
+    // 桌面里被清洗掉的组件数（超限 HTML / 名称尺寸不合规 / 格位冲突）
+    homeLayoutLoss: result.homeLayoutLoss ?? null,
   }
 }
 
@@ -56,14 +59,16 @@ export async function importProjectFromFile(file) {
  * @param {Awaited<ReturnType<typeof importProjectFromFile>>} result
  */
 export function describeImport(result) {
+  let base = '已导入。'
   if (result.kind === IMPORT_KIND.BARE_JSON) {
-    return '已导入项目数据。此文件不含图片，图片位置会显示占位；要完整恢复请用 .zip 备份包。'
+    base = '已导入项目数据。此文件不含图片，图片位置会显示占位；要完整恢复请用 .zip 备份包。'
+  } else if (result.missingAssets.length) {
+    base = `已导入，但有 ${result.missingAssets.length} 张图片在包里找不到，作品里会显示占位。`
+  } else if (result.importedAssets > 0) {
+    base = `已导入，包含 ${result.importedAssets} 张图片。`
   }
-  if (result.missingAssets.length) {
-    return `已导入，但有 ${result.missingAssets.length} 张图片在包里找不到，作品里会显示占位。`
-  }
-  if (result.importedAssets > 0) {
-    return `已导入，包含 ${result.importedAssets} 张图片。`
-  }
-  return '已导入。'
+  // 桌面缺组件不会报错，只会"看起来少了几个"，必须显式说出来
+  const loss = result.homeLayoutLoss
+  if (!loss) return base
+  return `${base}另外有 ${loss.oversized + loss.invalid} 个桌面小组件没能恢复，已跳过。`
 }

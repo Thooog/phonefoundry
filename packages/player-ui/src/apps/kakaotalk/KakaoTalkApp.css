@@ -817,6 +817,12 @@
   width: fit-content;
   max-width: calc(100% - 60px);
   margin: 10px auto;
+  /*
+   * 必须是 flex（块级），不能沿用上面日期胶囊的 inline-flex：
+   * inline 级盒子的 auto 外边距会算成 0，靠 margin:auto 居中根本不生效，
+   * 结果就是一行提示贴在左边 —— 真机的群提示是居中的一行。
+   */
+  display: flex;
   letter-spacing: var(--pui-tracking-body);
   text-align: center;
   overflow-wrap: anywhere;
@@ -1046,15 +1052,16 @@
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 2px;
   height: 16px;
   min-width: 0;
   overflow: hidden;
 }
 
+/* 柱宽固定 3px：长短只让柱子变多/变少，粗细与疏密不跟着气泡宽度跑 */
 .pui-kt__voice-wave i {
-  flex: 1 1 0;
-  min-width: 1.5px;
+  flex: none;
+  width: 3px;
   border-radius: 1px;
   background: currentColor;
   opacity: 0.5;

@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { createSampleProject } from '@phone-sim/shared'
-import { buildZip, exportProjectBackup } from '@exporter'
+import { createSampleProject, HOME_HTML_LIMIT } from '@phone-sim/shared'
+import { buildZip, declaredUnzipBytes, exportProjectBackup } from '@exporter'
 
 import * as repo from '../../db/repository.js'
 import { importProjectRecord } from '../../db/project-service.js'
 import { importProjectFromFile, describeImport } from '../import-backup.js'
-import { IMPORT_KIND, parseBackupZip, parseBareJson } from '../parse-backup.js'
+import { IMPORT_KIND, parseBareJson, parseBackupZip, parseImportFile } from '../parse-backup.js'
 import { resetDatabase } from '../../db/__tests__/support/fake-db.js'
 
 beforeEach(async () => {
@@ -36,6 +36,36 @@ function asFile(bytes, name) {
   return new File([bytes], name)
 }
 
+/**
+ * 造一个"中央目录声称解压后有 N 字节"的最小 ZIP。
+ *
+ * 不需要真的塞 N 字节进去 —— 压缩炸弹靠的正是这种"声明远大于实际"的差距，
+ * 而要测的正是"解压之前能不能看出来"。
+ */
+function fakeZipDeclaring(uncompressedBytes) {
+  const name = new TextEncoder().encode('a.txt')
+  const central = new Uint8Array(46 + name.length)
+  const cdView = new DataView(central.buffer)
+  cdView.setUint32(0, 0x02014b50, true) // 中央目录记录签名
+  cdView.setUint32(20, 0xffffffff, true) // compressedSize（不参与判断）
+  cdView.setUint32(24, uncompressedBytes, true) // uncompressedSize
+  cdView.setUint16(28, name.length, true) // 文件名长度
+  central.set(name, 46)
+
+  const eocd = new Uint8Array(22)
+  const eocdView = new DataView(eocd.buffer)
+  eocdView.setUint32(0, 0x06054b50, true) // EOCD 签名
+  eocdView.setUint16(8, 1, true) // 本盘条目数
+  eocdView.setUint16(10, 1, true) // 总条目数
+  eocdView.setUint32(12, central.length, true) // 中央目录大小
+  eocdView.setUint32(16, 0, true) // 中央目录偏移
+
+  const out = new Uint8Array(central.length + eocd.length)
+  out.set(central, 0)
+  out.set(eocd, central.length)
+  return out
+}
+
 // ───────────────────── 解析层 ─────────────────────
 
 describe('parseBackupZip', () => {
@@ -54,6 +84,20 @@ describe('parseBackupZip', () => {
     const backup = await exportProjectBackup({ project })
     const imported = await importProjectFromFile(asFile(backup.bytes, backup.fileName))
     expect(imported.project.workSettings.homeLayout).toEqual(homeLayout)
+  })
+
+  it('warns instead of silently dropping a desktop widget that cannot be restored', async () => {
+    const project = createSampleProject()
+    project.workSettings.homeLayout = { items: [
+      { id: 'home_huge', kind: 'html-widget', size: '2x2', area: 'grid', slot: 4, name: '太大', html: 'x'.repeat(HOME_HTML_LIMIT + 1) },
+      { id: 'home_ok', kind: 'html-widget', size: '2x2', area: 'grid', slot: 8, name: '正常', html: '<b>ok</b>' },
+    ] }
+    const backup = await exportProjectBackup({ project })
+    const imported = await importProjectFromFile(asFile(backup.bytes, backup.fileName))
+
+    expect(imported.homeLayoutLoss).toEqual({ oversized: 1, invalid: 0 })
+    expect(imported.warnings.join('')).toContain('1 个小组件没能恢复')
+    expect(describeImport(imported)).toContain('1 个桌面小组件没能恢复')
   })
 
   it('从备份包里取出项目与图片二进制', async () => {
@@ -129,6 +173,46 @@ describe('parseBareJson', () => {
   it('不是 JSON 也不像项目时报可读的错', () => {
     expect(() => parseBareJson(new TextEncoder().encode('不是 json'))).toThrow(/JSON/)
     expect(() => parseBareJson(new TextEncoder().encode('{"a":1}'))).toThrow(/角色/)
+  })
+})
+
+// ───────────────────── 体积上限（内存保护） ─────────────────────
+
+describe('导入体积上限', () => {
+  it('超大文件在读取内容之前就拒绝', async () => {
+    let read = false
+    const huge = {
+      size: 300 * 1024 * 1024,
+      arrayBuffer: async () => {
+        read = true
+        return new ArrayBuffer(0)
+      },
+    }
+
+    await expect(parseImportFile(huge)).rejects.toThrow(/导入上限/)
+    // 关键：连一次 arrayBuffer 都不该发生 —— 那一步才是真正吃内存的地方
+    expect(read).toBe(false)
+  })
+
+  it('能读出正常包的解压总大小，与实际解压结果一致', async () => {
+    const backup = await exportProjectBackup({
+      project: projectWithImage(),
+      assets: new Map([['img_a', imageBytes()]]),
+    })
+    const { readZip } = await import('@exporter')
+    const actual = [...readZip(backup.bytes).values()].reduce((sum, b) => sum + b.length, 0)
+
+    expect(declaredUnzipBytes(backup.bytes)).toBe(actual)
+  })
+
+  it('声明解压后 2GB 的包在解压前被拦下（压缩炸弹）', () => {
+    const bomb = fakeZipDeclaring(2 * 1024 * 1024 * 1024)
+    expect(() => parseBackupZip(bomb)).toThrow(/解压后会超过/)
+  })
+
+  it('裸 JSON 也有限制，且提示改用 zip', () => {
+    const bytes = new Uint8Array(65 * 1024 * 1024)
+    expect(() => parseBareJson(bytes)).toThrow(/导入上限/)
   })
 })
 

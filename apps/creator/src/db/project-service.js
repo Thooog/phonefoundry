@@ -7,6 +7,7 @@ import {
   createSampleProject,
   ID_PREFIX,
   prepareProject,
+  summarizeHomeLayoutLoss,
 } from '@phone-sim/shared'
 import * as repo from './repository.js'
 import { rewriteAssetRefs, rewriteAssetInternalRefs } from './asset-refs.js'
@@ -26,6 +27,31 @@ const MAX_NAME_LENGTH = 80
 function normalizeName(raw) {
   const trimmed = String(raw ?? '').trim().slice(0, MAX_NAME_LENGTH)
   return trimmed || '未命名作品'
+}
+
+/**
+ * 丢掉深值为 `undefined` 的键。
+ *
+ * `undefined` 不是 JSON 值：它进不了 `JSON.stringify`，也过不了作品数据的
+ * `assertPlain()` 守卫。旧版本在复制 / 导入项目时，会给本来没有这个字段的
+ * 记录（X 的回复、Instagram 的评论、相簿封面……）凭空补一个 `undefined`
+ * —— 于是那份项目从此导出作品、导出备份都报
+ * 「work.appData.x.replies[0].mediaAssetIds 类型为 undefined，无法安全序列化」。
+ *
+ * 补在读取端：用户不用重做项目，打开一次、保存一次就自动写回干净数据。
+ */
+function dropUndefinedKeys(value) {
+  if (Array.isArray(value)) return value.map(dropUndefinedKeys)
+  if (!value || typeof value !== 'object') return value
+  // Date / Blob 等非纯对象原样返回，别把类型拆散
+  const proto = Object.getPrototypeOf(value)
+  if (proto !== Object.prototype && proto !== null) return value
+  const out = {}
+  for (const [k, v] of Object.entries(value)) {
+    if (v === undefined) continue
+    out[k] = dropUndefinedKeys(v)
+  }
+  return out
 }
 
 // ───────────────────── 读取 ─────────────────────
@@ -56,7 +82,9 @@ export function monotonicIso() {
 /** 读取项目；不存在返回 null（列表里的过期项不该让页面崩） */
 export async function readProject(projectId) {
   if (!projectId) return null
-  return (await repo.getProject(projectId)) ?? null
+  const record = (await repo.getProject(projectId)) ?? null
+  // 顺带清掉历史遗留的 `undefined` 键（见 dropUndefinedKeys）
+  return record ? dropUndefinedKeys(record) : null
 }
 
 /** 落盘项目 —— 必须带当前锁凭据；仓储层会在同一事务内复核 */
@@ -178,12 +206,17 @@ export async function duplicateFromSnapshot(snapshot) {
  * @param {object} params.project   备份包里的 project.json（原样，未换 id）
  * @param {Map<string, Blob>} [params.blobs] 旧 assetId → 二进制
  * @param {string} [params.nameSuffix] 名字后缀，用来区分多次导入
- * @returns {Promise<{ project: object, warnings: string[], missingAssets: string[], importedAssets: number }>}
+ * @returns {Promise<{ project: object, warnings: string[], homeLayoutLoss: object|null, missingAssets: string[], importedAssets: number }>}
  */
 export async function importProjectRecord({ project, blobs = new Map(), nameSuffix = '（导入）' }) {
   const prepared = prepareProject(project)
   project = prepared.project
   const check = { warnings: prepared.warnings }
+
+  // 桌面里超限或残缺的条目会在读取时被静默清洗掉（`normalizeHomeLayout`），
+  // 导入是唯一能告诉用户"桌面少了几个组件"的时机
+  const homeLayoutLoss = summarizeHomeLayoutLoss(project.workSettings?.homeLayout)
+  if (homeLayoutLoss) check.warnings.push(describeHomeLayoutLoss(homeLayoutLoss))
 
   const ts = monotonicIso()
   const newProjectId = createId(ID_PREFIX.PROJECT)
@@ -230,9 +263,23 @@ export async function importProjectRecord({ project, blobs = new Map(), nameSuff
   return {
     project: clone,
     warnings: check.warnings,
+    homeLayoutLoss,
     missingAssets,
     importedAssets: assetRecords.length,
   }
+}
+
+/**
+ * 把"桌面丢了几个组件"翻成人话。
+ *
+ * 两种原因对用户的意义完全不同：HTML 超限是他自己写太长（可以删一点再导），
+ * 其余是数据本身不合规（只能重新添加）。所以分开说，别合并成"导入有问题"。
+ */
+function describeHomeLayoutLoss({ oversized, invalid }) {
+  const parts = []
+  if (oversized) parts.push(`${oversized} 个的 HTML 超过 256 KiB`)
+  if (invalid) parts.push(`${invalid} 个的名称、尺寸或位置不合规`)
+  return `桌面有 ${oversized + invalid} 个小组件没能恢复（${parts.join('，')}），已跳过。`
 }
 
 /**
@@ -254,7 +301,7 @@ async function cloneProject(source, sourceAssetOwnerId) {
   const newProjectId = createId(ID_PREFIX.PROJECT)
   const idMap = new Map()
 
-  const clone = structuredClone(source)
+  const clone = dropUndefinedKeys(structuredClone(source))
   clone.id = newProjectId
   clone.name = `${source.name || '未命名作品'} 副本`
   clone.isSample = false

@@ -26,16 +26,6 @@ blob-report/
 # 本地临时文件
 .tmp-*
 
-/_*.json
-/_*.txt
-/_*.html
-/_*.png
-/_*.mjs
-/_shots*/
-
-/scripts/_*.py
-/scripts/_*.mjs
-
 /scripts/probe-*.mjs
 /scripts/shot-*.mjs
 !/scripts/probe-creator-flow.mjs
@@ -81,6 +71,9 @@ yarn-error.log*
 pnpm-debug.log*
 pnpm-error.log*
 
-
 docs/
 /design/
+
+# 调试/验证产物归档区
+.ai_workspace/
+AGENTS.md

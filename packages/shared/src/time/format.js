@@ -106,6 +106,25 @@ export function formatDayDivider(targetDate, storyDate) {
   return `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日`
 }
 
+/** 会话里的时刻：9:05。小时不补零，与气泡角标 / 时刻提示保持一致。 */
+function chatHourMinute(date) {
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+/**
+ * 聊天日期分隔的完整戳：`11月6日 15:17` / `2025年10月16日 11:11`。
+ *
+ * 今天、昨天只给相对词 —— 那一天的时刻由「时刻提示」在消息之间补，读者本来就
+ * 知道是哪天。更早的日子则把日期和时刻合成一句话：以前是一个日期胶囊 + 一个
+ * 时刻胶囊分两处显示，看起来像两条互不相干的信息，还得自己拼起来。
+ */
+export function formatDayDividerStamp(targetDate, storyDate) {
+  const relation = dayRelation(targetDate, storyDate)
+  const label = formatDayDivider(targetDate, storyDate)
+  if (relation === 'today' || relation === 'yesterday') return label
+  return `${label} ${chatHourMinute(targetDate)}`
+}
+
 /** 会话列表 / 信息流角标时间：今天显示 HH:mm，昨天显示"昨天"，更早显示日期。 */
 export function formatListTime(iso, { storyDate, timeFormat } = {}) {
   const date = toDate(iso)

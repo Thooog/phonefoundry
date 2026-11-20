@@ -285,6 +285,76 @@ describe('打开失败的处理', () => {
     expect(store.hasProject).toBe(false)
     expect(store.loadError).toBeTruthy()
   })
+
+  it('★ 拿到锁之后读取失败 → 交还锁，不留"被别人编辑中"', async () => {
+    const original = createProject({ name: '库坏了' })
+    await repoMod.saveProject(original)
+
+    // 锁已经拿到，紧接着读项目时炸了（连接失效、库损坏）
+    const spy = vi.spyOn(repoMod, 'getProject').mockRejectedValueOnce(new Error('库损坏'))
+    const store = useProjectStore()
+    const result = await store.open(original.id)
+    spy.mockRestore()
+
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('error')
+    expect(store.loadError).toBeTruthy()
+
+    // 关键：不能留着锁。留着的话本页停在空壳工作区，
+    // 心跳还在续租，别的标签页会一直以为有人在编辑
+    const record = await repoMod.getMeta(lockKey(original.id))
+    expect(record?.tabId ?? null).toBeNull()
+  })
+
+  it('★ 接管后读取失败 → 同样交还锁', async () => {
+    const original = createProject({ name: '接管失败' })
+    await repoMod.saveProject(original)
+
+    await tabGuard.startHeartbeat()
+    await repoMod.setMeta(lockKey(original.id), {
+      key: lockKey(original.id),
+      projectId: original.id,
+      tabId: 'tab_other',
+      fence: 1,
+      heartbeatAt: Date.now(),
+    })
+
+    const store = useProjectStore()
+    await store.open(original.id)
+    expect(store.isReadOnly).toBe(true)
+
+    const spy = vi.spyOn(repoMod, 'getProject').mockRejectedValueOnce(new Error('库损坏'))
+    const result = await store.takeOver()
+    spy.mockRestore()
+
+    expect(result.ok).toBe(false)
+    expect(store.loadError).toBeTruthy()
+
+    const record = await repoMod.getMeta(lockKey(original.id))
+    expect(record?.tabId ?? null).toBeNull()
+  })
+})
+
+// ───────────────────── 资源写入失败 ─────────────────────
+
+describe('addAsset 的失败路径', () => {
+  it('★ 二进制先落盘、项目没接受时立刻回收，不留孤儿', async () => {
+    const original = createProject({ name: '资源回滚' })
+    await repoMod.saveProject(original)
+
+    const store = useProjectStore()
+    await store.open(original.id)
+
+    // 让 mutate 的 structuredClone 抛错，等价于"blob 写了但项目没接住"
+    store.project.__broken = () => {}
+
+    const blob = new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'image/webp' })
+    await expect(store.addAsset({ blob, kind: 'image', mimeType: 'image/webp' })).rejects.toThrow()
+
+    // 项目没多出资源，磁盘上也不该留一个没人引用的 blob
+    expect(store.project.assets).toHaveLength(0)
+    expect(await repoMod.listAssetRecords(original.id)).toHaveLength(0)
+  })
 })
 
 // ───────────────────── 项目列表 store ─────────────────────

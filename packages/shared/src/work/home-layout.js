@@ -17,8 +17,16 @@ const GRID_SIZE = HOME_COLUMNS * HOME_ROWS
 // Dock can hold only four of the built-in apps. Reserve desktop cells for the rest.
 const MAX_WIDGET_CELLS = GRID_SIZE - Math.max(0, APPS.length - HOME_COLUMNS)
 export const DEFAULT_HOME_WIDGET_SIZE = '2x2'
-export const HOME_WIDGET_SIZES = Array.from({ length: HOME_COLUMNS }, (_, index) => index + 1)
-  .flatMap(columns => Array.from({ length: HOME_ROWS }, (_, index) => ({ columns, rows: index + 1 })))
+/**
+ * 自定义小组件宽、高各自的上限（格）。
+ *
+ * 界面上的两个下拉框由它派生，`HOME_WIDGET_SIZES` 也由它生成 ——
+ * 只有这一份数字，"界面上能选"和"数据里能存"才不会是两套真相。
+ * 调大它等于同时放开界面选项，需要重新做一次视觉确认。
+ */
+export const HOME_WIDGET_MAX_SPAN = 4
+export const HOME_WIDGET_SIZES = Array.from({ length: HOME_WIDGET_MAX_SPAN }, (_, index) => index + 1)
+  .flatMap(columns => Array.from({ length: HOME_WIDGET_MAX_SPAN }, (_, index) => ({ columns, rows: index + 1 })))
   .filter(({ columns, rows }) => columns * rows <= MAX_WIDGET_CELLS)
   .map(size => ({ ...size, value: `${size.columns}x${size.rows}` }))
 const widgetSizesByValue = new Map(HOME_WIDGET_SIZES.map(size => [size.value, size]))
@@ -134,6 +142,22 @@ export function fitsHomeHtml(html) {
     new TextEncoder().encode(html).length <= HOME_HTML_LIMIT
 }
 
+/**
+ * 把存下来的尺寸收进当前支持的范围。
+ *
+ * 旧版本/手工改过的备份里可能有 1x5、4x6 这类超出上限的值。直接判为无效会把
+ * 整块源码一起丢掉；压回上限则至少保住内容和名字，尺寸在下次保存时固化。
+ *
+ * @param {unknown} value
+ * @returns {string|null} 合法尺寸，或 null（根本不是尺寸）
+ */
+function clampWidgetSize(value) {
+  const [columns, rows] = String(value).split('x').map(Number)
+  if (!Number.isInteger(columns) || !Number.isInteger(rows) || columns < 1 || rows < 1) return null
+  const size = `${Math.min(columns, HOME_WIDGET_MAX_SPAN)}x${Math.min(rows, HOME_WIDGET_MAX_SPAN)}`
+  return widgetSizesByValue.has(size) ? size : null
+}
+
 function readHomeItem(raw) {
   if (!raw || typeof raw.id !== 'string' || !/^[a-z0-9_-]{1,80}$/i.test(raw.id)) return null
   const { id, kind, area, slot } = raw
@@ -148,9 +172,10 @@ function readHomeItem(raw) {
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 30) : ''
   if (!name || !raw.html.trim()) return null
   if (kind === 'html-widget' && raw.size != null) {
-    if (!widgetSizesByValue.has(raw.size)) return null
-    if (raw.size === '1x1') return { ...item, kind: 'html-app', name, html: raw.html }
-    return { ...item, name, html: raw.html, size: raw.size }
+    const size = clampWidgetSize(raw.size)
+    if (!size) return null
+    if (size === '1x1') return { ...item, kind: 'html-app', name, html: raw.html }
+    return { ...item, name, html: raw.html, size }
   }
   return { ...item, name, html: raw.html }
 }
@@ -169,12 +194,46 @@ export function normalizeHomeLayout(raw) {
   const removedItems = []
   for (const entry of Array.isArray(raw.removedItems) ? raw.removedItems : []) {
     const item = readHomeItem(entry)
-    if (!item || !['app', 'decorative-app', 'html-app'].includes(item.kind) ||
+    if (!item || !['app', 'decorative-app', 'html-app', 'html-widget'].includes(item.kind) ||
       item.id === 'settings' || !homeItemCells(item).length ||
       items.some(other => other.id === item.id) || removedItems.some(other => other.id === item.id)) continue
     removedItems.push(item)
   }
   return items.length || removedItems.length ? { items, ...(removedItems.length && { removedItems }) } : null
+}
+
+/**
+ * 统计一份 homeLayout 里有多少条目会在清洗时被丢掉。
+ *
+ * `normalizeHomeLayout` 丢东西是静默的（超限的 HTML、空名字、越界或重叠的格位），
+ * 读取端看不出差别，只有导入那一刻能告诉用户"桌面少了几个组件"。
+ *
+ * @param {unknown} raw
+ * @returns {{ oversized: number, invalid: number }|null} 没有丢失时返回 null
+ */
+export function summarizeHomeLayoutLoss(raw) {
+  if (!Array.isArray(raw?.items)) return null
+  const kept = []
+  let oversized = 0
+  let invalid = 0
+  for (const entry of raw.items) {
+    if (kept.length >= GRID_SIZE + HOME_COLUMNS) {
+      invalid += 1
+      continue
+    }
+    const item = readHomeItem(entry)
+    if (!item) {
+      const isHtmlItem = ['html-app', 'html-widget'].includes(entry?.kind)
+      if (isHtmlItem && typeof entry?.html === 'string' && !fitsHomeHtml(entry.html)) oversized += 1
+      else invalid += 1
+      continue
+    }
+    const cells = homeItemCells(item)
+    if (!cells.length || kept.some(other => other.id === item.id) ||
+      occupants(kept, item.area, cells).length) invalid += 1
+    else kept.push(item)
+  }
+  return oversized || invalid ? { oversized, invalid } : null
 }
 
 export function resolveHomeLayout(work, stored = normalizeHomeLayout(work?.workSettings?.homeLayout)) {
@@ -204,7 +263,9 @@ export function removeHomeItem(work, id) {
   const item = layout.items.find(entry => entry.id === id)
   if (!canRemoveHomeItem(work, item)) return { error: '有作品内容的应用和设置不能移除。' }
   const removedItems = [...(layout.removedItems ?? [])]
-  if (['app', 'decorative-app', 'html-app'].includes(item.kind)) removedItems.push(item)
+  // 自定义小组件也进 removedItems：手写的 HTML 一旦移除就没有别处可找回，
+  // 和应用包里的自定义图标一样该留着源码，等用户从「应用包」里恢复。
+  if (['app', 'decorative-app', 'html-app', 'html-widget'].includes(item.kind)) removedItems.push(item)
   return { items: layout.items.filter(entry => entry.id !== id), ...(removedItems.length && { removedItems }) }
 }
 
